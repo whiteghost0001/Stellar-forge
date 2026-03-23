@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+target/
+
+# Environment
+.env
+.env.local
+frontend/.env
+frontend/.env.local
+
+# Misc
+.DS_Store
+*.log
+frontend/package-lock.json
