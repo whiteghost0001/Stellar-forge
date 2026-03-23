@@ -2,16 +2,20 @@ import React from 'react'
 
 interface CardProps {
   title?: string
+  /** Heading level for the card title. Defaults to 3. */
+  headingLevel?: 2 | 3 | 4
   children: React.ReactNode
   className?: string
 }
 
-export const Card: React.FC<CardProps> = ({ title, children, className = '' }) => {
+export const Card: React.FC<CardProps> = ({ title, headingLevel = 3, children, className = '' }) => {
+  const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4'
+
   return (
     <div className={`bg-white overflow-hidden shadow rounded-lg ${className}`}>
       {title && (
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">{title}</h3>
+        <div className="px-4 py-5 sm:p-6 border-b border-gray-200">
+          <Heading className="text-lg leading-6 font-medium text-gray-900">{title}</Heading>
         </div>
       )}
       <div className="px-4 py-5 sm:p-6">
