@@ -27,6 +27,16 @@ export const validateTokenParams = (params: any) => {
   return { valid: Object.keys(errors).length === 0, errors }
 }
 
+// CIDv0: Qm + 44 base58 chars (total 46); CIDv1: bafy... base32
+const CID_V0 = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
+const CID_V1 = /^b[a-z2-7]{58,}$/
+
+export const isValidIPFSUri = (uri: string): boolean => {
+  if (!uri.startsWith('ipfs://')) return false
+  const cid = uri.slice(7)
+  return CID_V0.test(cid) || CID_V1.test(cid)
+}
+
 export const isValidImageFile = (file: File): { valid: boolean; error?: string } => {
   const maxSize = 5 * 1024 * 1024 // 5MB
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
