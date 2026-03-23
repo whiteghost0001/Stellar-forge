@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "analyze": "vite-bundle-analyzer dist",
     "build": "vite build",
+    "dev": "vite",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
@@ -39,8 +40,10 @@
     "jsdom": "^23.0.1",
     "postcss": "^8.4.32",
     "tailwindcss": "^4.1.18",
+    "terser": "^5.27.0",
     "typescript": "^5.9.3",
-    "vite": "^5.0.8",
+    "vite": "^8.0.2",
+    "vite-bundle-analyzer": "^1.0.6",
     "vitest": "^4.0.18"
   }
 }
