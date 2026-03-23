@@ -16,7 +16,7 @@ export const validateTokenParams = (params: any) => {
     errors.symbol = 'Token symbol must be 1-12 characters'
   }
 
-  if (!params.decimals || params.decimals < 0 || params.decimals > 18) {
+  if (params.decimals === undefined || params.decimals === null || params.decimals < 0 || params.decimals > 18) {
     errors.decimals = 'Decimals must be 0-18'
   }
 

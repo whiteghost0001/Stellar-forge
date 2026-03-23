@@ -30,3 +30,35 @@ describe('isValidIPFSUri', () => {
     expect(isValidIPFSUri('QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco')).toBe(false)
   })
 })
+
+import { validateTokenParams } from '../utils/validation'
+
+const base = { name: 'MyToken', symbol: 'MTK', initialSupply: '1000' }
+
+describe('validateTokenParams - decimals', () => {
+  it('accepts decimals = 0', () => {
+    expect(validateTokenParams({ ...base, decimals: 0 }).valid).toBe(true)
+  })
+
+  it('accepts decimals = 18', () => {
+    expect(validateTokenParams({ ...base, decimals: 18 }).valid).toBe(true)
+  })
+
+  it('rejects decimals = -1', () => {
+    const { valid, errors } = validateTokenParams({ ...base, decimals: -1 })
+    expect(valid).toBe(false)
+    expect(errors.decimals).toBeDefined()
+  })
+
+  it('rejects decimals = 19', () => {
+    const { valid, errors } = validateTokenParams({ ...base, decimals: 19 })
+    expect(valid).toBe(false)
+    expect(errors.decimals).toBeDefined()
+  })
+
+  it('rejects missing decimals', () => {
+    const { valid, errors } = validateTokenParams({ ...base, decimals: undefined })
+    expect(valid).toBe(false)
+    expect(errors.decimals).toBeDefined()
+  })
+})
