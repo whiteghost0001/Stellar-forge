@@ -1,4 +1,14 @@
 # Stellar-forge
+
+<div align="center">
+
+[![CI](https://github.com/Dami24-hub/Stellar-forge/actions/workflows/main.yml/badge.svg)](https://github.com/Dami24-hub/Stellar-forge/actions/workflows/main.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Built on Stellar](https://img.shields.io/badge/Built_on-Stellar-black.svg?logo=stellar&logoColor=white)](https://stellar.org/)
+[![Coverage](https://img.shields.io/badge/Coverage-Pending-yellow.svg)]()
+
+</div>
+
 StellarForge - Stellar Token Deployer StellarForge is a user-friendly decentralized application (dApp) that enables creators, entrepreneurs, and businesses in emerging markets to deploy custom tokens on the Stellar blockchain without writing a single line of code.
 # StellarForge - Stellar Token Deployer
 
