@@ -2,255 +2,363 @@
 
 use super::*;
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    testutils::Address as _,
+    token::{StellarAssetClient, TokenClient},
     Address, Env, String,
 };
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 
-fn setup_env() -> (Env, TokenFactoryClient<'static>, Address, Address) {
-    let env = Env::default();
-    env.mock_all_auths();
+struct Setup {
+    env: Env,
+    client: TokenFactoryClient<'static>,
+    admin: Address,
+    treasury: Address,
+    /// XLM-like fee token; admin is its issuer so we can mint to payers
+    fee_token: Address,
+}
 
-    let contract_id = env.register_contract(None, TokenFactory);
-    let client = TokenFactoryClient::new(&env, &contract_id);
+impl Setup {
+    fn new() -> Self {
+        let env = Env::default();
+        env.mock_all_auths();
 
-    let admin = Address::generate(&env);
-    let treasury = Address::generate(&env);
+        let contract_id = env.register_contract(None, TokenFactory);
+        let client = TokenFactoryClient::new(&env, &contract_id);
 
-    client.initialize(&admin, &treasury, &1000, &500);
+        let admin = Address::generate(&env);
+        let treasury = Address::generate(&env);
 
-    (env, client, admin, treasury)
+        // Register a stellar-asset contract to use as the fee token
+        let fee_token = env.register_stellar_asset_contract_v2(admin.clone()).address();
+
+        client.initialize(&admin, &treasury, &1_000, &500);
+
+        Setup { env, client, admin, treasury, fee_token }
+    }
+
+    /// Mint `amount` of fee tokens to `recipient` so they can pay fees.
+    fn fund(&self, recipient: &Address, amount: i128) {
+        StellarAssetClient::new(&self.env, &self.fee_token).mint(recipient, &amount);
+    }
+
+    /// Register a fresh stellar-asset token and return its address.
+    fn new_token(&self, issuer: &Address) -> Address {
+        self.env.register_stellar_asset_contract_v2(issuer.clone()).address()
+    }
+}
+
+// ── initialize ────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_initialize() {
+    let s = Setup::new();
+    let state = s.client.get_state();
+    assert_eq!(state.admin, s.admin);
+    assert_eq!(state.treasury, s.treasury);
+    assert_eq!(state.base_fee, 1_000);
+    assert_eq!(state.metadata_fee, 500);
+    assert!(!state.paused);
+    assert_eq!(state.token_count, 0);
+}
+
+#[test]
+fn test_initialize_already_initialized() {
+    let s = Setup::new();
+    let result = s.client.try_initialize(&s.admin, &s.treasury, &1_000, &500);
+    assert_eq!(result, Err(Ok(Error::AlreadyInitialized)));
+}
+
+// ── create_token ──────────────────────────────────────────────────────────────
+
+#[test]
+fn test_create_token() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    let token_addr = s.new_token(&creator);
+    let index = s.client.create_token(
+        &creator,
+        &token_addr,
+        &String::from_str(&s.env, "MyToken"),
+        &String::from_str(&s.env, "MTK"),
+        &7,
+        &1_000,
+        &s.fee_token,
+    );
+
+    assert_eq!(index, 1);
+    // Fee was transferred to treasury
+    assert_eq!(
+        TokenClient::new(&s.env, &s.fee_token).balance(&s.treasury),
+        1_000
+    );
+}
+
+#[test]
+fn test_create_token_insufficient_fee() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 999);
+
+    let token_addr = s.new_token(&creator);
+    let result = s.client.try_create_token(
+        &creator,
+        &token_addr,
+        &String::from_str(&s.env, "MyToken"),
+        &String::from_str(&s.env, "MTK"),
+        &7,
+        &999, // below base_fee of 1_000
+        &s.fee_token,
+    );
+    assert_eq!(result, Err(Ok(Error::InsufficientFee)));
+}
+
+// ── set_metadata ──────────────────────────────────────────────────────────────
+
+#[test]
+fn test_set_metadata() {
+    let s = Setup::new();
+    let admin = Address::generate(&s.env);
+    s.fund(&admin, 500);
+
+    let token_addr = s.new_token(&admin);
+    let uri = String::from_str(&s.env, "ipfs://Qm123");
+
+    s.client.set_metadata(&token_addr, &admin, &uri, &500, &s.fee_token);
+
+    // Fee transferred to treasury
+    assert_eq!(
+        TokenClient::new(&s.env, &s.fee_token).balance(&s.treasury),
+        500
+    );
+}
+
+#[test]
+fn test_set_metadata_insufficient_fee() {
+    let s = Setup::new();
+    let admin = Address::generate(&s.env);
+    let token_addr = s.new_token(&admin);
+
+    let result = s.client.try_set_metadata(
+        &token_addr,
+        &admin,
+        &String::from_str(&s.env, "ipfs://Qm123"),
+        &100, // below metadata_fee of 500
+        &s.fee_token,
+    );
+    assert_eq!(result, Err(Ok(Error::InsufficientFee)));
+}
+
+// ── mint_tokens ───────────────────────────────────────────────────────────────
+
+#[test]
+fn test_mint_tokens() {
+    let s = Setup::new();
+    let token_admin = Address::generate(&s.env);
+    s.fund(&token_admin, 1_000);
+
+    let token_addr = s.new_token(&token_admin);
+    let recipient = Address::generate(&s.env);
+
+    s.client.mint_tokens(
+        &token_addr,
+        &token_admin,
+        &recipient,
+        &5_000,
+        &1_000,
+        &s.fee_token,
+    );
+
+    assert_eq!(
+        TokenClient::new(&s.env, &token_addr).balance(&recipient),
+        5_000
+    );
+}
+
+// ── burn ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_burn() {
+    let s = Setup::new();
+    let token_admin = Address::generate(&s.env);
+    let token_addr = s.new_token(&token_admin);
+
+    // Mint some tokens to the burner first
+    let burner = Address::generate(&s.env);
+    StellarAssetClient::new(&s.env, &token_addr).mint(&burner, &1_000);
+
+    s.client.burn(&token_addr, &burner, &400);
+
+    assert_eq!(
+        TokenClient::new(&s.env, &token_addr).balance(&burner),
+        600
+    );
+}
+
+#[test]
+fn test_burn_invalid_amount() {
+    let s = Setup::new();
+    let token_addr = s.new_token(&s.admin);
+    let burner = Address::generate(&s.env);
+
+    let result = s.client.try_burn(&token_addr, &burner, &0);
+    assert_eq!(result, Err(Ok(Error::InvalidBurnAmount)));
+}
+
+// ── update_fees ───────────────────────────────────────────────────────────────
+
+#[test]
+fn test_update_fees() {
+    let s = Setup::new();
+    s.client.update_fees(&s.admin, &Some(2_000_i128), &Some(1_000_i128));
+
+    let state = s.client.get_state();
+    assert_eq!(state.base_fee, 2_000);
+    assert_eq!(state.metadata_fee, 1_000);
+}
+
+#[test]
+fn test_update_fees_unauthorized() {
+    let s = Setup::new();
+    let stranger = Address::generate(&s.env);
+
+    let result = s.client.try_update_fees(&stranger, &Some(2_000_i128), &None);
+    assert_eq!(result, Err(Ok(Error::Unauthorized)));
+}
+
+// ── get_token_info ────────────────────────────────────────────────────────────
+
+#[test]
+fn test_get_token_info() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    let token_addr = s.new_token(&creator);
+    s.client.create_token(
+        &creator,
+        &token_addr,
+        &String::from_str(&s.env, "MyToken"),
+        &String::from_str(&s.env, "MTK"),
+        &7,
+        &1_000,
+        &s.fee_token,
+    );
+
+    let info = s.client.get_token_info(&1);
+    assert_eq!(info.name, String::from_str(&s.env, "MyToken"));
+    assert_eq!(info.symbol, String::from_str(&s.env, "MTK"));
+    assert_eq!(info.decimals, 7);
+    assert_eq!(info.creator, creator);
+}
+
+#[test]
+fn test_get_token_info_not_found() {
+    let s = Setup::new();
+    let result = s.client.try_get_token_info(&99);
+    assert_eq!(result, Err(Ok(Error::TokenNotFound)));
 }
 
 // ── pause / unpause ───────────────────────────────────────────────────────────
 
 #[test]
-fn test_initial_state_is_not_paused() {
-    let (_env, client, _admin, _treasury) = setup_env();
-    let state = client.get_state();
-    assert!(!state.paused);
-}
-
-#[test]
-fn test_admin_can_pause() {
-    let (_env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
-    let state = client.get_state();
-    assert!(state.paused);
-}
-
-#[test]
-fn test_admin_can_unpause() {
-    let (_env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
-    client.unpause(&admin);
-    let state = client.get_state();
-    assert!(!state.paused);
+fn test_admin_can_pause_and_unpause() {
+    let s = Setup::new();
+    s.client.pause(&s.admin);
+    assert!(s.client.get_state().paused);
+    s.client.unpause(&s.admin);
+    assert!(!s.client.get_state().paused);
 }
 
 #[test]
 fn test_non_admin_cannot_pause() {
-    let (env, client, _admin, _treasury) = setup_env();
-    let stranger = Address::generate(&env);
-
-    let result = client.try_pause(&stranger);
-    assert_eq!(result, Err(Ok(Error::Unauthorized)));
+    let s = Setup::new();
+    let stranger = Address::generate(&s.env);
+    assert_eq!(s.client.try_pause(&stranger), Err(Ok(Error::Unauthorized)));
 }
-
-#[test]
-fn test_non_admin_cannot_unpause() {
-    let (env, client, admin, _treasury) = setup_env();
-    let stranger = Address::generate(&env);
-
-    client.pause(&admin);
-    let result = client.try_unpause(&stranger);
-    assert_eq!(result, Err(Ok(Error::Unauthorized)));
-}
-
-// ── paused blocks create_token, mint_tokens, set_metadata ────────────────────
 
 #[test]
 fn test_create_token_blocked_when_paused() {
-    let (env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
+    let s = Setup::new();
+    s.client.pause(&s.admin);
 
-    let creator = Address::generate(&env);
-    let result = client.try_create_token(
+    let creator = Address::generate(&s.env);
+    let token_addr = s.new_token(&creator);
+    let result = s.client.try_create_token(
         &creator,
-        &String::from_str(&env, "MyToken"),
-        &String::from_str(&env, "MTK"),
+        &token_addr,
+        &String::from_str(&s.env, "T"),
+        &String::from_str(&s.env, "T"),
         &7,
-        &1_000_000,
-        &1000,
+        &1_000,
+        &s.fee_token,
     );
-
     assert_eq!(result, Err(Ok(Error::ContractPaused)));
-}
-
-#[test]
-fn test_mint_tokens_blocked_when_paused() {
-    let (env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
-
-    let token_address = Address::generate(&env);
-    let recipient = Address::generate(&env);
-
-    let result = client.try_mint_tokens(
-        &token_address,
-        &admin,
-        &recipient,
-        &500,
-        &1000,
-    );
-
-    assert_eq!(result, Err(Ok(Error::ContractPaused)));
-}
-
-#[test]
-fn test_set_metadata_blocked_when_paused() {
-    let (env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
-
-    let token_address = Address::generate(&env);
-
-    let result = client.try_set_metadata(
-        &token_address,
-        &admin,
-        &String::from_str(&env, "https://example.com/meta.json"),
-        &500,
-    );
-
-    assert_eq!(result, Err(Ok(Error::ContractPaused)));
-}
-
-// ── unpause restores functionality ───────────────────────────────────────────
-
-#[test]
-fn test_create_token_works_after_unpause() {
-    // This test just verifies unpause lifts the block.
-    // create_token will still fail due to fee transfer in test env,
-    // but the error should NOT be ContractPaused.
-    let (env, client, admin, _treasury) = setup_env();
-
-    client.pause(&admin);
-    client.unpause(&admin);
-
-    let creator = Address::generate(&env);
-    let result = client.try_create_token(
-        &creator,
-        &String::from_str(&env, "MyToken"),
-        &String::from_str(&env, "MTK"),
-        &7,
-        &1_000_000,
-        &1000,
-    );
-
-    // Should NOT be ContractPaused — any other error is fine here
-    assert_ne!(result, Err(Ok(Error::ContractPaused)));
-}
-
-// ── burn is NOT blocked by pause ─────────────────────────────────────────────
-
-#[test]
-fn test_burn_not_blocked_when_paused() {
-    let (env, client, admin, _treasury) = setup_env();
-    client.pause(&admin);
-
-    let token_address = Address::generate(&env);
-    let burner = Address::generate(&env);
-
-    // burn will fail because the token isn't real in this unit test,
-    // but the error must NOT be ContractPaused
-    let result = client.try_burn(&token_address, &burner, &100);
-    assert_ne!(result, Err(Ok(Error::ContractPaused)));
 }
 
 // ── transfer_admin ────────────────────────────────────────────────────────────
 
 #[test]
-fn test_admin_can_transfer_ownership() {
-    let (env, client, admin, _treasury) = setup_env();
-    let new_admin = Address::generate(&env);
-
-    client.transfer_admin(&admin, &new_admin);
-
-    let state = client.get_state();
-    assert_eq!(state.admin, new_admin);
+fn test_transfer_admin() {
+    let s = Setup::new();
+    let new_admin = Address::generate(&s.env);
+    s.client.transfer_admin(&s.admin, &new_admin);
+    assert_eq!(s.client.get_state().admin, new_admin);
 }
 
 #[test]
-fn test_old_admin_loses_privileges_after_transfer() {
-    let (env, client, admin, _treasury) = setup_env();
-    let new_admin = Address::generate(&env);
-
-    client.transfer_admin(&admin, &new_admin);
-
-    // old admin can no longer pause
-    let result = client.try_pause(&admin);
-    assert_eq!(result, Err(Ok(Error::Unauthorized)));
+fn test_transfer_admin_unauthorized() {
+    let s = Setup::new();
+    let stranger = Address::generate(&s.env);
+    let new_admin = Address::generate(&s.env);
+    assert_eq!(
+        s.client.try_transfer_admin(&stranger, &new_admin),
+        Err(Ok(Error::Unauthorized))
+    );
 }
 
 #[test]
-fn test_non_admin_cannot_transfer_admin() {
-    let (env, client, _admin, _treasury) = setup_env();
-    let stranger = Address::generate(&env);
-    let new_admin = Address::generate(&env);
-
-    let result = client.try_transfer_admin(&stranger, &new_admin);
-    assert_eq!(result, Err(Ok(Error::Unauthorized)));
-}
-
-#[test]
-fn test_transfer_admin_to_same_address_fails() {
-    let (_env, client, admin, _treasury) = setup_env();
-
-    let result = client.try_transfer_admin(&admin, &admin);
-    assert_eq!(result, Err(Ok(Error::InvalidParameters)));
+fn test_transfer_admin_same_address_fails() {
+    let s = Setup::new();
+    assert_eq!(
+        s.client.try_transfer_admin(&s.admin, &s.admin),
+        Err(Ok(Error::InvalidParameters))
+    );
 }
 
 // ── get_tokens_by_creator ─────────────────────────────────────────────────────
 
 #[test]
-fn test_get_tokens_by_creator_returns_empty_for_unknown_address() {
-    let (env, client, _admin, _treasury) = setup_env();
-    let stranger = Address::generate(&env);
+fn test_get_tokens_by_creator() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 2_000);
 
-    let indices = client.get_tokens_by_creator(&stranger);
-    assert_eq!(indices.len(), 0);
+    let t1 = s.new_token(&creator);
+    let t2 = s.new_token(&creator);
+
+    s.client.create_token(
+        &creator, &t1,
+        &String::from_str(&s.env, "A"), &String::from_str(&s.env, "A"),
+        &7, &1_000, &s.fee_token,
+    );
+    s.client.create_token(
+        &creator, &t2,
+        &String::from_str(&s.env, "B"), &String::from_str(&s.env, "B"),
+        &7, &1_000, &s.fee_token,
+    );
+
+    let indices = s.client.get_tokens_by_creator(&creator);
+    assert_eq!(indices.len(), 2);
+    assert_eq!(indices.get(0).unwrap(), 1);
+    assert_eq!(indices.get(1).unwrap(), 2);
 }
 
 #[test]
-fn test_get_tokens_by_creator_returns_correct_indices() {
-    let (env, client, _admin, _treasury) = setup_env();
-    let creator = Address::generate(&env);
-
-    // create_token will fail at the fee-transfer step in the test env,
-    // so we call it twice and verify both indices are tracked.
-    // We use try_create_token and only care that the creator list is updated
-    // when the call succeeds. Since fee transfer fails in unit tests we
-    // verify the storage key logic by checking the empty-vec baseline and
-    // that a second creator gets an independent empty list.
-    let creator2 = Address::generate(&env);
-
-    let indices1 = client.get_tokens_by_creator(&creator);
-    let indices2 = client.get_tokens_by_creator(&creator2);
-
-    // Both unknown creators return empty vecs
-    assert_eq!(indices1.len(), 0);
-    assert_eq!(indices2.len(), 0);
-
-    // Confirm they are independent (not the same object)
-    assert_eq!(indices1, indices2);
-}
-
-#[test]
-fn test_get_tokens_by_creator_different_creators_are_independent() {
-    let (env, client, _admin, _treasury) = setup_env();
-    let creator_a = Address::generate(&env);
-    let creator_b = Address::generate(&env);
-
-    // Neither has tokens — both return empty
-    assert_eq!(client.get_tokens_by_creator(&creator_a).len(), 0);
-    assert_eq!(client.get_tokens_by_creator(&creator_b).len(), 0);
+fn test_get_tokens_by_creator_empty_for_unknown() {
+    let s = Setup::new();
+    let stranger = Address::generate(&s.env);
+    assert_eq!(s.client.get_tokens_by_creator(&stranger).len(), 0);
 }
