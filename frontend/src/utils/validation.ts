@@ -51,3 +51,27 @@ export const isValidImageFile = (file: File): { valid: boolean; error?: string }
 
   return { valid: true }
 }
+
+export const validateTokenName = (name: string): boolean => {
+  return name.length >= 1 && name.length <= 32
+}
+
+export const validateTokenSymbol = (symbol: string): boolean => {
+  return symbol.length >= 1 && symbol.length <= 12
+}
+
+export const validateDecimals = (decimals: number): boolean => {
+  return decimals >= 0 && decimals <= 18
+}
+
+export const validateTokenName = (name: string): boolean => {
+  return name.length >= 1 && name.length <= 32
+}
+
+export const validateTokenSymbol = (symbol: string): boolean => {
+  return symbol.length >= 1 && symbol.length <= 12
+}
+
+export const validateDecimals = (decimals: number): boolean => {
+  return decimals >= 0 && decimals <= 18
+}
