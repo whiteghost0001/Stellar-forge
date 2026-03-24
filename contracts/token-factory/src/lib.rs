@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Vec, symbol_short, token};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Vec, vec, symbol_short, token};
 use soroban_token_sdk::TokenClient;
 
 #[contracttype]
@@ -119,6 +119,16 @@ impl TokenFactory {
             token_count,
             ..state
         });
+
+        // Append token index to creator's list
+        let creator_key = (symbol_short!("cr_tokens"), creator.clone());
+        let mut creator_tokens: Vec<u32> = env
+            .storage()
+            .instance()
+            .get(&creator_key)
+            .unwrap_or_else(|| vec![&env]);
+        creator_tokens.push_back(token_count);
+        env.storage().instance().set(&creator_key, &creator_tokens);
 
         env.events().publish((symbol_short!("token_created"),), (token_address.clone(), creator));
 
@@ -281,6 +291,14 @@ impl TokenFactory {
             Some(info) => Ok(info),
             None => Err(Error::TokenNotFound),
         }
+    }
+
+    pub fn get_tokens_by_creator(env: Env, creator: Address) -> Vec<u32> {
+        let creator_key = (symbol_short!("cr_tokens"), creator);
+        env.storage()
+            .instance()
+            .get(&creator_key)
+            .unwrap_or_else(|| vec![&env])
     }
 }
 
