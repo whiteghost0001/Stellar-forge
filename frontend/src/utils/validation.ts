@@ -5,7 +5,12 @@ export const isValidStellarAddress = (address: string): boolean => {
   return address.length === 56 && address.startsWith('G')
 }
 
-export const validateTokenParams = (params: any) => {
+export const validateTokenParams = (params: {
+  name?: string
+  symbol?: string
+  decimals?: number
+  initialSupply?: string
+}) => {
   const errors: Record<string, string> = {}
 
   if (!params.name || params.name.length < 1 || params.name.length > 32) {
@@ -16,7 +21,7 @@ export const validateTokenParams = (params: any) => {
     errors.symbol = 'Token symbol must be 1-12 characters'
   }
 
-  if (!params.decimals || params.decimals < 0 || params.decimals > 18) {
+  if (params.decimals === undefined || params.decimals === null || params.decimals < 0 || params.decimals > 18) {
     errors.decimals = 'Decimals must be 0-18'
   }
 
@@ -25,6 +30,16 @@ export const validateTokenParams = (params: any) => {
   }
 
   return { valid: Object.keys(errors).length === 0, errors }
+}
+
+// CIDv0: Qm + 44 base58 chars (total 46); CIDv1: bafy... base32
+const CID_V0 = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
+const CID_V1 = /^b[a-z2-7]{58,}$/
+
+export const isValidIPFSUri = (uri: string): boolean => {
+  if (!uri.startsWith('ipfs://')) return false
+  const cid = uri.slice(7)
+  return CID_V0.test(cid) || CID_V1.test(cid)
 }
 
 export const isValidImageFile = (file: File): { valid: boolean; error?: string } => {
@@ -40,4 +55,16 @@ export const isValidImageFile = (file: File): { valid: boolean; error?: string }
   }
 
   return { valid: true }
+}
+
+export const validateTokenName = (name: string): boolean => {
+  return name.length >= 1 && name.length <= 32
+}
+
+export const validateTokenSymbol = (symbol: string): boolean => {
+  return symbol.length >= 1 && symbol.length <= 12
+}
+
+export const validateDecimals = (decimals: number): boolean => {
+  return decimals >= 0 && decimals <= 18
 }

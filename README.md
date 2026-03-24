@@ -1,5 +1,3 @@
-# Stellar-forge
-StellarForge - Stellar Token Deployer StellarForge is a user-friendly decentralized application (dApp) that enables creators, entrepreneurs, and businesses in emerging markets to deploy custom tokens on the Stellar blockchain without writing a single line of code.
 # StellarForge - Stellar Token Deployer
 
 StellarForge is a user-friendly decentralized application (dApp) that enables creators, entrepreneurs, and businesses in emerging markets to deploy custom tokens on the Stellar blockchain without writing a single line of code.
@@ -12,6 +10,8 @@ StellarForge is a user-friendly decentralized application (dApp) that enables cr
 - **Wallet Integration**: Connect with Freighter wallet for seamless transactions
 - **Burn Functionality**: Burn tokens to reduce supply
 - **Admin Controls**: Update fees and manage the factory
+- **Network Switcher**: Toggle between testnet and mainnet from the UI
+- **Transaction History**: View on-chain contract events with pagination
 - **Testnet & Mainnet Support**: Deploy on both testnet and mainnet
 
 ## Tech Stack
@@ -38,7 +38,7 @@ StellarForge is a user-friendly decentralized application (dApp) that enables cr
 
 - **Rust**: For building Soroban contracts
 - **Node.js** (v18+): For frontend development
-- **Soroban CLI**: For contract deployment and testing
+- **Stellar CLI**: For contract deployment and testing (see setup below)
 - **Freighter Wallet**: Browser extension for Stellar transactions
 
 ## Installation & Setup
@@ -49,11 +49,17 @@ git clone <repository-url>
 cd stellar-forge
 ```
 
-### 2. Setup Soroban Environment
-Run the setup script to install Rust, Soroban CLI, and configure testnet:
+### 2. Setup Stellar CLI Environment
+Run the setup script to install Rust, Stellar CLI, and configure testnet:
 ```bash
 ./scripts/setup-soroban.sh
 ```
+
+> **Note:** The Soroban CLI was renamed to `stellar` in recent versions. All commands below use `stellar`. If you have the old `soroban` binary installed, uninstall it and run the setup script again:
+> ```bash
+> cargo uninstall soroban-cli
+> cargo install stellar-cli --features opt
+> ```
 
 ### 3. Install Frontend Dependencies
 ```bash
@@ -108,12 +114,14 @@ npm run lint         # Lint code
 
 ### Admin Functions
 - `update_fees(admin, base_fee?, metadata_fee?)`: Update factory fees
+- `pause(admin)` / `unpause(admin)`: Pause or resume the factory
 
 ### View Functions
 - `get_state()`: Get factory state
 - `get_base_fee()`: Get token creation fee
 - `get_metadata_fee()`: Get metadata setting fee
 - `get_token_info(index)`: Get token information by index
+- `get_tokens_by_creator(creator)`: Get all token indices created by a given address
 
 ## Usage
 
@@ -132,13 +140,13 @@ cd contracts/token-factory
 cargo build --target wasm32-unknown-unknown --release
 
 # Deploy to testnet
-soroban contract deploy \
+stellar contract deploy \
   --wasm target/wasm32-unknown-unknown/release/token_factory.wasm \
   --source <your-secret-key> \
   --network testnet
 
 # Initialize the contract
-soroban contract invoke \
+stellar contract invoke \
   --id <contract-id> \
   --source <your-secret-key> \
   --network testnet \
@@ -170,24 +178,32 @@ stellar-forge/
 │           └── test.rs       # Contract tests
 ├── frontend/                  # React application
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── services/         # API integrations
+│   │   ├── components/       # UI components (NetworkSwitcher, TransactionHistory, ...)
+│   │   ├── context/          # React contexts (Wallet, Toast, Network)
+│   │   ├── services/         # API integrations (stellar, wallet, ipfs)
 │   │   ├── hooks/            # React hooks
 │   │   ├── config/           # Configuration files
+│   │   ├── types/            # TypeScript type definitions
 │   │   └── utils/            # Utility functions
 │   ├── package.json
 │   └── vite.config.ts
 ├── scripts/                   # Setup scripts
+│   └── setup-soroban.sh      # Installs Rust + Stellar CLI + configures testnet
 └── README.md
 ```
 
+## Security
+
+We take security seriously. If you discover a security vulnerability, please review our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
+
+For users deploying tokens, we strongly recommend:
+- Always test on testnet first before mainnet deployment
+- Review all parameters carefully using the mainnet deployment checklist
+- Verify contract addresses and transaction details before signing
+
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup and contribution guidelines.
 
 ## License
 

@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+Disallow: /tokens/
+Disallow: /create
+Disallow: /mint
+Disallow: /burn
+
+Sitemap: /sitemap.xml
