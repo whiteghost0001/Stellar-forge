@@ -227,6 +227,34 @@ export class StellarService {
   }
 
   /**
+   * Fetch all tokens created by a specific creator address.
+   * Scans factory contract events for token_created events matching the creator.
+   * @param creator Stellar address of the token creator
+   */
+  async getTokensByCreator(creator: string): Promise<TokenInfo[]> {
+    const contractId = STELLAR_CONFIG.factoryContractId
+    if (!contractId) {
+      return []
+    }
+
+    const { events } = await this.getContractEvents(contractId, 100)
+    const creatorTokens: TokenInfo[] = []
+
+    for (const event of events) {
+      if (event.type === 'token_created' && event.data.creator === creator) {
+        try {
+          const tokenInfo = await this.getTokenInfo(event.data.tokenAddress)
+          creatorTokens.push(tokenInfo)
+        } catch {
+          // Skip tokens that fail to load
+        }
+      }
+    }
+
+    return creatorTokens
+  }
+
+  /**
    * Fetch contract events for the factory contract, newest-first.
    * @param contractId  Soroban contract address (C...)
    * @param limit       Max events per page (default 20)

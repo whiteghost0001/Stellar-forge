@@ -3,6 +3,7 @@ import { Input } from './UI/Input'
 import { Button } from './UI/Button'
 import { useDebounce } from '../hooks/useDebounce'
 import { stellarService } from '../services/stellar'
+import type { TokenInfo } from '../types'
 
 interface BurnFormProps {
   tokenAddress?: string
@@ -12,7 +13,7 @@ interface BurnFormProps {
 export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress = '', onSuccess }) => {
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [amount, setAmount] = useState('')
-  const [tokenInfo, setTokenInfo] = useState<any>(null)
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
 
   const debouncedAddress = useDebounce(tokenAddress, 300)
 

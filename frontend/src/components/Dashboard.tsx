@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Input } from './UI/Input'
 import { TransactionHistory } from './TransactionHistory'
 import { useDebounce } from '../hooks/useDebounce'
+import { useWallet } from '../hooks/useWallet'
 import { stellarService } from '../services/stellar'
 import { STELLAR_CONFIG } from '../config/stellar'
+import type { TokenInfo } from '../types'
 
 export const TokenDashboard: React.FC = () => {
   const { wallet } = useWallet()
-  const [tokens, setTokens] = useState<FactoryTokenInfo[]>([])
+  const [tokens, setTokens] = useState<TokenInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const loadTokens = useCallback(async () => {
     if (!wallet.address) {
@@ -48,9 +51,23 @@ export const TokenDashboard: React.FC = () => {
   }
 
   const formatCreationDate = useMemo(
-    () => (createdAt: number) => new Date(createdAt * 1000).toLocaleString(),
+    () => (createdAt: number | undefined) => {
+      if (!createdAt) return 'Unknown'
+      return new Date(createdAt * 1000).toLocaleString()
+    },
     []
   )
+
+  const results = useMemo(() => {
+    if (!search.trim()) return tokens
+    const query = search.toLowerCase()
+    return tokens.filter(
+      (t) =>
+        t.name.toLowerCase().includes(query) ||
+        t.symbol.toLowerCase().includes(query) ||
+        t.creator.toLowerCase().includes(query)
+    )
+  }, [tokens, search])
 
   const factoryContractId = STELLAR_CONFIG.factoryContractId
 
