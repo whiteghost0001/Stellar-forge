@@ -1,9 +1,15 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, contracterror,
-    Address, Env, String, Vec, vec, symbol_short, token,
+    contract, contractimpl, contracttype, contracterror, contractclient,
+    Address, BytesN, Env, String, Vec, vec, symbol_short, token,
 };
+
+/// Minimal interface for initializing a deployed SEP-41 token contract.
+#[contractclient(name = "TokenInitClient")]
+pub trait TokenInit {
+    fn initialize(env: Env, admin: Address, decimal: u32, name: String, symbol: String);
+}
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
@@ -21,6 +27,7 @@ pub struct FactoryState {
     pub admin: Address,
     pub paused: bool,
     pub treasury: Address,
+    pub fee_token: Address,
     pub base_fee: i128,
     pub metadata_fee: i128,
     pub token_count: u32,
@@ -50,6 +57,7 @@ impl TokenFactory {
         env: Env,
         admin: Address,
         treasury: Address,
+        fee_token: Address,
         base_fee: i128,
         metadata_fee: i128,
     ) -> Result<(), Error> {
@@ -60,6 +68,7 @@ impl TokenFactory {
             admin: admin.clone(),
             paused: false,
             treasury,
+            fee_token,
             base_fee,
             metadata_fee,
             token_count: 0,
@@ -85,19 +94,19 @@ impl TokenFactory {
         Ok(())
     }
 
-    /// Register a token with the factory and pay the creation fee.
-    /// `token_address` is the already-deployed token contract address.
-    /// `fee_token` is the asset used to pay the fee (e.g. XLM).
+    /// Deploy a new token contract from `token_wasm_hash`, initialize it,
+    /// and register it with the factory. `salt` must be unique per creator.
     pub fn create_token(
         env: Env,
         creator: Address,
-        token_address: Address,
+        salt: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
         name: String,
         symbol: String,
         decimals: u32,
+        initial_supply: i128,
         fee_payment: i128,
-        fee_token: Address,
-    ) -> Result<u32, Error> {
+    ) -> Result<Address, Error> {
         Self::require_not_paused(&env)?;
         creator.require_auth();
 
@@ -107,24 +116,42 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        token::TokenClient::new(&env, &fee_token).transfer(
+        // Transfer fee to treasury using the stored fee token
+        token::TokenClient::new(&env, &state.fee_token).transfer(
             &creator,
             &state.treasury,
             &fee_payment,
         );
 
+        // Deploy token contract deterministically from creator + salt
+        let token_address = env
+            .deployer()
+            .with_address(creator.clone(), salt)
+            .deploy(token_wasm_hash);
+
+        // Initialize the deployed token
+        TokenInitClient::new(&env, &token_address).initialize(
+            &creator,
+            &decimals,
+            &name,
+            &symbol,
+        );
+
+        // Mint initial supply to creator if requested
+        if initial_supply > 0 {
+            token::StellarAssetClient::new(&env, &token_address).mint(&creator, &initial_supply);
+        }
+
         state.token_count += 1;
         let index = state.token_count;
 
-        let info = TokenInfo {
+        env.storage().instance().set(&index, &TokenInfo {
             name,
             symbol,
             decimals,
             creator: creator.clone(),
             created_at: env.ledger().timestamp(),
-        };
-
-        env.storage().instance().set(&index, &info);
+        });
         Self::save_state(&env, &state);
 
         let creator_key = (symbol_short!("crtoks"), creator.clone());
@@ -137,8 +164,8 @@ impl TokenFactory {
         env.storage().instance().set(&creator_key, &list);
 
         env.events()
-            .publish((symbol_short!("created"),), (token_address, creator, index));
-        Ok(index)
+            .publish((symbol_short!("created"),), (token_address.clone(), creator, index));
+        Ok(token_address)
     }
 
     pub fn set_metadata(
@@ -147,7 +174,6 @@ impl TokenFactory {
         admin: Address,
         metadata_uri: String,
         fee_payment: i128,
-        fee_token: Address,
     ) -> Result<(), Error> {
         Self::require_not_paused(&env)?;
         admin.require_auth();
@@ -158,7 +184,7 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        token::TokenClient::new(&env, &fee_token).transfer(
+        token::TokenClient::new(&env, &state.fee_token).transfer(
             &admin,
             &state.treasury,
             &fee_payment,
@@ -180,7 +206,6 @@ impl TokenFactory {
         to: Address,
         amount: i128,
         fee_payment: i128,
-        fee_token: Address,
     ) -> Result<(), Error> {
         Self::require_not_paused(&env)?;
         admin.require_auth();
@@ -191,7 +216,7 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        token::TokenClient::new(&env, &fee_token).transfer(
+        token::TokenClient::new(&env, &state.fee_token).transfer(
             &admin,
             &state.treasury,
             &fee_payment,
