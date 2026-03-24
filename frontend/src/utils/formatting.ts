@@ -17,6 +17,9 @@ export const xlmToStroops = (xlm: number | string): number => {
   return Math.floor(parseFloat(xlm.toString()) * 10000000)
 }
 
+export const stellarExplorerUrl = (value: string, type: 'account' | 'contract'): string => {
+  const base = 'https://stellar.expert/explorer/testnet'
+  return type === 'contract' ? `${base}/contract/${value}` : `${base}/account/${value}`
 // Format as 'Mar 19, 2026, 3:28 PM UTC'
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
   month: 'short', day: 'numeric', year: 'numeric',
