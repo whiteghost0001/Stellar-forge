@@ -21,4 +21,4 @@ jobs:
           override: true
 
       - name: Build wasm
-        run: cargo build --target wasm32-unknown-unknown --release --manifest-path contracts/token-factory/Cargo.toml
+        run: cargo build --locked --target wasm32-unknown-unknown --release --manifest-path contracts/token-factory/Cargo.toml
