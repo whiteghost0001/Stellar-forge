@@ -19,6 +19,8 @@ pub struct TokenInfo {
     pub decimals: u32,
     pub creator: Address,
     pub created_at: u64,
+    /// Whether burning is enabled for this token. Defaults to true.
+    pub burn_enabled: bool,
 }
 
 #[contracttype]
@@ -151,6 +153,7 @@ impl TokenFactory {
             decimals,
             creator: creator.clone(),
             created_at: env.ledger().timestamp(),
+            burn_enabled: true,
         });
         Self::save_state(&env, &state);
 
@@ -162,6 +165,9 @@ impl TokenFactory {
             .unwrap_or_else(|| vec![&env]);
         list.push_back(index);
         env.storage().instance().set(&creator_key, &list);
+
+        // Store reverse mapping: token_address -> index (for burn_enabled lookup)
+        env.storage().instance().set(&(&token_address, symbol_short!("idx")), &index);
 
         env.events()
             .publish((symbol_short!("created"),), (token_address.clone(), creator, index));
@@ -241,10 +247,46 @@ impl TokenFactory {
             return Err(Error::InvalidBurnAmount);
         }
 
+        // Check burn_enabled via reverse index lookup
+        let idx_key = (&token_address, symbol_short!("idx"));
+        if let Some(index) = env.storage().instance().get::<_, u32>(&idx_key) {
+            let info: TokenInfo = env.storage().instance().get(&index).unwrap();
+            if !info.burn_enabled {
+                return Err(Error::BurnNotEnabled);
+            }
+        }
+
         token::TokenClient::new(&env, &token_address).burn(&from, &amount);
 
         env.events()
             .publish((symbol_short!("burned"),), (token_address, from, amount));
+        Ok(())
+    }
+
+    /// Enable or disable burning for a token. Only the token creator can call this.
+    pub fn set_burn_enabled(
+        env: Env,
+        token_address: Address,
+        admin: Address,
+        enabled: bool,
+    ) -> Result<(), Error> {
+        admin.require_auth();
+
+        let idx_key = (&token_address, symbol_short!("idx"));
+        let index: u32 = env
+            .storage()
+            .instance()
+            .get(&idx_key)
+            .ok_or(Error::TokenNotFound)?;
+
+        let mut info: TokenInfo = env.storage().instance().get(&index).unwrap();
+
+        if info.creator != admin {
+            return Err(Error::Unauthorized);
+        }
+
+        info.burn_enabled = enabled;
+        env.storage().instance().set(&index, &info);
         Ok(())
     }
 

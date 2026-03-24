@@ -88,6 +88,7 @@ fn test_create_token() {
         decimals: 7,
         creator: creator.clone(),
         created_at: 0,
+        burn_enabled: true,
     };
     s.env.as_contract(&s.client.address, || {
         let mut state: FactoryState = s.env.storage().instance()
@@ -189,11 +190,34 @@ fn test_mint_tokens() {
 
 // ── burn ──────────────────────────────────────────────────────────────────────
 
+fn seed_token_with_burn(s: &Setup, creator: &Address, burn_enabled: bool) -> Address {
+    let token_addr = s.new_token(creator);
+    let info = TokenInfo {
+        name: String::from_str(&s.env, "T"),
+        symbol: String::from_str(&s.env, "T"),
+        decimals: 7,
+        creator: creator.clone(),
+        created_at: 0,
+        burn_enabled,
+    };
+    s.env.as_contract(&s.client.address, || {
+        let mut state: FactoryState = s.env.storage().instance()
+            .get(&symbol_short!("state")).unwrap();
+        state.token_count += 1;
+        let index = state.token_count;
+        s.env.storage().instance().set(&index, &info);
+        s.env.storage().instance().set(&symbol_short!("state"), &state);
+        s.env.storage().instance()
+            .set(&(&token_addr, symbol_short!("idx")), &index);
+    });
+    token_addr
+}
+
 #[test]
 fn test_burn() {
     let s = Setup::new();
     let token_admin = Address::generate(&s.env);
-    let token_addr = s.new_token(&token_admin);
+    let token_addr = seed_token_with_burn(&s, &token_admin, true);
 
     let burner = Address::generate(&s.env);
     StellarAssetClient::new(&s.env, &token_addr).mint(&burner, &1_000);
@@ -201,6 +225,73 @@ fn test_burn() {
     s.client.burn(&token_addr, &burner, &400);
 
     assert_eq!(TokenClient::new(&s.env, &token_addr).balance(&burner), 600);
+}
+
+#[test]
+fn test_burn_disabled_returns_error() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    let token_addr = seed_token_with_burn(&s, &creator, false);
+
+    let burner = Address::generate(&s.env);
+    assert_eq!(
+        s.client.try_burn(&token_addr, &burner, &100),
+        Err(Ok(Error::BurnNotEnabled))
+    );
+}
+
+#[test]
+fn test_set_burn_enabled_disables_burn() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    let token_addr = seed_token_with_burn(&s, &creator, true);
+
+    s.client.set_burn_enabled(&token_addr, &creator, &false);
+
+    let burner = Address::generate(&s.env);
+    assert_eq!(
+        s.client.try_burn(&token_addr, &burner, &100),
+        Err(Ok(Error::BurnNotEnabled))
+    );
+}
+
+#[test]
+fn test_set_burn_enabled_re_enables_burn() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    let token_addr = seed_token_with_burn(&s, &creator, false);
+
+    s.client.set_burn_enabled(&token_addr, &creator, &true);
+
+    let burner = Address::generate(&s.env);
+    StellarAssetClient::new(&s.env, &token_addr).mint(&burner, &500);
+    s.client.burn(&token_addr, &burner, &200);
+    assert_eq!(TokenClient::new(&s.env, &token_addr).balance(&burner), 300);
+}
+
+#[test]
+fn test_set_burn_enabled_unauthorized() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    let token_addr = seed_token_with_burn(&s, &creator, true);
+    let stranger = Address::generate(&s.env);
+
+    assert_eq!(
+        s.client.try_set_burn_enabled(&token_addr, &stranger, &false),
+        Err(Ok(Error::Unauthorized))
+    );
+}
+
+#[test]
+fn test_set_burn_enabled_token_not_found() {
+    let s = Setup::new();
+    let fake_addr = Address::generate(&s.env);
+    let admin = Address::generate(&s.env);
+
+    assert_eq!(
+        s.client.try_set_burn_enabled(&fake_addr, &admin, &false),
+        Err(Ok(Error::TokenNotFound))
+    );
 }
 
 #[test]
@@ -246,6 +337,7 @@ fn test_get_token_info() {
         decimals: 7,
         creator: creator.clone(),
         created_at: 0,
+        burn_enabled: true,
     };
     s.env.as_contract(&s.client.address, || {
         s.env.storage().instance().set(&1u32, &info);
