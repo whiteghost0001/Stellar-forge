@@ -23,6 +23,15 @@ export interface TokenInfo {
   decimals: number
   totalSupply: string
   creator: string
+  createdAt?: number // unix seconds
+  metadataUri?: string
+}
+
+export interface IPFSMetadata {
+  name?: string
+  description?: string
+  image?: string // ipfs:// URI
+  [key: string]: unknown
 }
 
 export interface AppError {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Input } from './UI/Input'
+import { Button } from './UI/Button'
 import { useDebounce } from '../hooks/useDebounce'
 import { useStellarContext } from '../context/StellarContext'
 // import { useWallet } from '../hooks/useWallet'
@@ -8,39 +9,29 @@ import { useStellarContext } from '../context/StellarContext'
 export const MintForm: React.FC = () => {
   const { stellarService } = useStellarContext()
   const [tokenAddress, setTokenAddress] = useState('')
+import { stellarService } from '../services/stellar'
+
+interface MintFormProps {
+  tokenAddress?: string
+  onSuccess?: () => void
+}
+
+export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress = '', onSuccess }) => {
+  const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [amount, setAmount] = useState('')
   const [tokenInfo, setTokenInfo] = useState<any>(null)
-  // const { wallet } = useWallet()
 
   const debouncedAddress = useDebounce(tokenAddress, 300)
 
   useEffect(() => {
     if (!debouncedAddress) return
-    stellarService.getTokenInfo(debouncedAddress).then(setTokenInfo)
+    stellarService.getTokenInfo(debouncedAddress).then(setTokenInfo).catch(() => setTokenInfo(null))
   }, [debouncedAddress])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Example: How to sign a transaction with Freighter
-    // if (!wallet.isConnected) {
-    //   alert('Please connect your wallet first')
-    //   return
-    // }
-    
-    // 1. Build your transaction XDR using stellar-sdk
-    // const xdr = await stellarService.buildMintTransaction(tokenAddress, amount, wallet.address)
-    
-    // 2. Sign the transaction with Freighter
-    // try {
-    //   const signedXdr = await walletService.signTransaction(xdr)
-    //   
-    //   // 3. Submit the signed transaction to Horizon
-    //   const result = await stellarService.submitTransaction(signedXdr)
-    //   console.log('Transaction successful:', result)
-    // } catch (error) {
-    //   console.error('Transaction failed:', error)
-    // }
+    // mint logic placeholder
+    onSuccess?.()
   }
 
   return (
@@ -50,18 +41,23 @@ export const MintForm: React.FC = () => {
         value={tokenAddress}
         onChange={(e) => setTokenAddress(e.target.value)}
         placeholder="G..."
+        required
       />
-      {tokenInfo && <p className="text-sm text-gray-600">Token found: {JSON.stringify(tokenInfo)}</p>}
+      {tokenInfo && (
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Token: {tokenInfo.name} ({tokenInfo.symbol})
+        </p>
+      )}
       <Input
         label="Amount"
         type="number"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         placeholder="0"
+        min="0"
+        required
       />
-      <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Mint
-      </button>
+      <Button type="submit" variant="primary">Mint</Button>
     </form>
   )
 }

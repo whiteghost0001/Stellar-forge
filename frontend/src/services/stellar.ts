@@ -1,6 +1,6 @@
 // Stellar SDK integration service
 import { STELLAR_CONFIG } from '../config/stellar'
-import type { ContractEvent, ContractEventType, GetEventsResult } from '../types'
+import type { ContractEvent, ContractEventType, GetEventsResult, TokenInfo } from '../types'
 
 const EVENT_TOPICS: ContractEventType[] = [
   'token_created',
@@ -169,9 +169,56 @@ export class StellarService {
     return { success: true }
   }
 
-  async getTokenInfo(tokenAddress: string): Promise<unknown> {
-    console.log('Getting token info for:', tokenAddress)
-    return {}
+  /**
+   * Fetch token info by scanning factory contract events for the given token address.
+   * Falls back to a stub if the factory contract ID is not configured.
+   */
+  async getTokenInfo(tokenAddress: string): Promise<TokenInfo> {
+    const contractId = STELLAR_CONFIG.factoryContractId
+    if (!contractId) {
+      // No factory contract configured — return a minimal stub so the UI can still render
+      return {
+        name: 'Unknown',
+        symbol: '???',
+        decimals: 7,
+        totalSupply: '0',
+        creator: '',
+        metadataUri: undefined,
+      }
+    }
+
+    // Fetch all relevant events for this token from the factory contract
+    const { events } = await this.getContractEvents(contractId, 100)
+
+    const tokenEvents = events.filter(
+      (e) => e.data.tokenAddress === tokenAddress,
+    )
+
+    if (!tokenEvents.length) {
+      throw new Error(`Token not found: ${tokenAddress}`)
+    }
+
+    const creationEvent = tokenEvents.find((e) => e.type === 'token_created')
+    const metadataEvent = [...tokenEvents]
+      .filter((e) => e.type === 'metadata_set')
+      .sort((a, b) => b.ledger - a.ledger)[0]
+
+    // Tally minted vs burned to derive total supply
+    let supply = 0n
+    for (const e of tokenEvents) {
+      if (e.type === 'tokens_minted') supply += BigInt(e.data.amount ?? '0')
+      if (e.type === 'tokens_burned') supply -= BigInt(e.data.amount ?? '0')
+    }
+
+    return {
+      name: tokenAddress, // real name requires a contract view call; use address as fallback
+      symbol: '—',
+      decimals: 7,
+      totalSupply: supply.toString(),
+      creator: creationEvent?.data.creator ?? '',
+      createdAt: creationEvent?.timestamp,
+      metadataUri: metadataEvent?.data.metadataUri,
+    }
   }
 
   async getTransaction(hash: string): Promise<unknown> {

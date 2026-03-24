@@ -318,4 +318,5 @@ pub enum Error {
     ContractPaused = 10,
 }
 
-mod test;
+#[cfg(test)]
+mod test;
