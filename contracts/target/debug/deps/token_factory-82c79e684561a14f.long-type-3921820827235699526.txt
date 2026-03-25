@@ -1,5 +1,0 @@
-From<(soroban_sdk::xdr::ScErrorType, soroban_sdk::xdr::ScErrorCode)>
-From<soroban_env_host::builtin_contracts::contract_error::ContractError>
-TryFromVal<Env, core::result::Result<soroban_sdk::Address, Error>>
-FromVal<Env, core::result::Result<soroban_sdk::Address, Error>>
-TryFromVal<Env, core::result::Result<TokenInfo, Error>>
