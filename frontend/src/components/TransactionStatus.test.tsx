@@ -1,6 +1,5 @@
-import React from 'react'
 import { render, screen, act } from '@testing-library/react'
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { TransactionStatus } from './TransactionStatus'
 import { stellarService } from '../services/stellar'
 
@@ -21,14 +20,14 @@ describe('TransactionStatus Component', () => {
   })
 
   test('renders pending state initially', async () => {
-    (stellarService.getTransaction as any).mockResolvedValue({ status: 'pending' })
+    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
     render(<TransactionStatus txHash="test-hash" />)
     expect(screen.getByText('Transaction pending...')).toBeInTheDocument()
   })
 
   test('polls and handles successful transaction', async () => {
     const onSuccess = vi.fn();
-    (stellarService.getTransaction as any)
+    (stellarService.getTransaction as Mock)
       .mockResolvedValueOnce({ status: 'pending' })
       .mockResolvedValueOnce({ status: 'success' })
 
@@ -49,7 +48,7 @@ describe('TransactionStatus Component', () => {
 
   test('polls and handles failed transaction', async () => {
     const onError = vi.fn();
-    (stellarService.getTransaction as any).mockResolvedValue({ status: 'error', error: 'Insufficient funds' })
+    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'error', error: 'Insufficient funds' })
 
     render(<TransactionStatus txHash="test-hash" onError={onError} />)
     
@@ -64,7 +63,7 @@ describe('TransactionStatus Component', () => {
 
   test('handles 60s timeout properly', async () => {
     const onError = vi.fn();
-    (stellarService.getTransaction as any).mockResolvedValue({ status: 'pending' })
+    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
 
     render(<TransactionStatus txHash="test-hash" onError={onError} />)
     

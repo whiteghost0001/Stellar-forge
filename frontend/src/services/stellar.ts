@@ -7,7 +7,7 @@ import {
   Address,
   nativeToScVal,
   scValToNative,
-  SorobanRpc,
+  rpc,
   xdr,
 } from 'stellar-sdk'
 import { STELLAR_CONFIG } from '../config/stellar'
@@ -74,8 +74,8 @@ function getNetworkPassphrase(): string {
   return network === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET
 }
 
-function getRpcServer(): SorobanRpc.Server {
-  return new SorobanRpc.Server(getNetworkConfig().sorobanRpcUrl, {
+function getRpcServer(): rpc.Server {
+  return new rpc.Server(getNetworkConfig().sorobanRpcUrl, {
     allowHttp: false,
   })
 }
@@ -91,22 +91,22 @@ function getRpcUrl(): string {
  * Returns the transaction hash on success.
  */
 async function simulateAndSubmit(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   tx: ReturnType<TransactionBuilder['build']>,
 ): Promise<string> {
   // 1. Simulate to get resource fees and check for errors
   const simResult = await server.simulateTransaction(tx)
 
-  if (SorobanRpc.Api.isSimulationError(simResult)) {
+  if (rpc.Api.isSimulationError(simResult)) {
     throw parseContractError(new Error(simResult.error))
   }
 
-  if (!SorobanRpc.Api.isSimulationSuccess(simResult)) {
+  if (!rpc.Api.isSimulationSuccess(simResult)) {
     throw new Error('Transaction simulation returned an unexpected result')
   }
 
   // 2. Assemble the transaction with the simulated resource data
-  const assembled = SorobanRpc.assembleTransaction(tx, simResult).build()
+  const assembled = rpc.assembleTransaction(tx, simResult).build()
 
   // 3. Sign via Freighter
   const signedXdr = await walletService.signTransaction(assembled.toXDR())
@@ -129,17 +129,17 @@ async function simulateAndSubmit(
 }
 
 async function pollTransaction(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   hash: string,
   maxAttempts = 30,
   intervalMs = 2000,
-): Promise<SorobanRpc.Api.GetTransactionResponse> {
+): Promise<rpc.Api.GetTransactionResponse> {
   for (let i = 0; i < maxAttempts; i++) {
     const result = await server.getTransaction(hash)
-    if (result.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+    if (result.status === rpc.Api.GetTransactionStatus.SUCCESS) {
       return result
     }
-    if (result.status === SorobanRpc.Api.GetTransactionStatus.FAILED) {
+    if (result.status === rpc.Api.GetTransactionStatus.FAILED) {
       throw parseContractError(new Error(`Transaction failed: ${hash}`))
     }
     // NOT_FOUND means still pending — wait and retry
@@ -152,7 +152,7 @@ async function pollTransaction(
  * Build a base TransactionBuilder for the given source account.
  */
 async function buildTxBuilder(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   sourceAddress: string,
 ): Promise<TransactionBuilder> {
   const account = await server.getAccount(sourceAddress)
@@ -221,7 +221,7 @@ function scValToString(val: any): string {
     if (type === xdr.ScValType.scvVoid()) return 'none'
     if (type === xdr.ScValType.scvBool()) return val.b().toString()
     if (type === xdr.ScValType.scvVec()) {
-      const items: string[] = (val.vec() ?? []).map((v: any) => scValToString(v))
+      const items: string[] = (val.vec() ?? []).map((v: xdr.ScVal) => scValToString(v))
       return items.join(', ')
     }
     return val.toXDR('base64')
@@ -314,7 +314,7 @@ async function rpcCall<T>(method: string, params: unknown): Promise<T> {
  * No signing or submission required.
  */
 async function callView(
-  server: SorobanRpc.Server,
+  server: rpc.Server,
   contractId: string,
   method: string,
   args: xdr.ScVal[],
@@ -332,11 +332,11 @@ async function callView(
 
   const simResult = await server.simulateTransaction(tx)
 
-  if (SorobanRpc.Api.isSimulationError(simResult)) {
+  if (rpc.Api.isSimulationError(simResult)) {
     throw parseContractError(new Error(simResult.error))
   }
 
-  if (!SorobanRpc.Api.isSimulationSuccess(simResult) || !simResult.result) {
+  if (!rpc.Api.isSimulationSuccess(simResult) || !simResult.result) {
     throw new Error(`View call to ${method} returned no result`)
   }
 
@@ -396,7 +396,7 @@ export class StellarService {
       const txResult = await server.getTransaction(hash)
       let tokenAddress = ''
       if (
-        txResult.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS &&
+        txResult.status === rpc.Api.GetTransactionStatus.SUCCESS &&
         txResult.returnValue
       ) {
         tokenAddress = scValToNative(txResult.returnValue) as string

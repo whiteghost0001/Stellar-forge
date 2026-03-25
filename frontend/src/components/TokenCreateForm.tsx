@@ -4,6 +4,7 @@ import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
 import { useToast } from '../context/ToastContext'
 import { useStellarContext } from '../context/StellarContext'
 import { TokenDeployParams } from '../types'
+import { STELLAR_CONFIG } from '../config/stellar'
 import { validateTokenSymbol, validateTokenName, validateDecimals } from '../utils/validation'
 
 const ESTIMATED_FEE = '0.01' // XLM
@@ -34,6 +35,9 @@ export const TokenCreateForm: React.FC = () => {
       symbol,
       decimals: parseInt(decimals),
       initialSupply,
+      salt: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+      tokenWasmHash: STELLAR_CONFIG.factoryContractId, // Placeholder or actual hash
+      feePayment: '100000', // Default fee
       ...(description && { metadata: { description, image: new File([], '') } }),
     }
 

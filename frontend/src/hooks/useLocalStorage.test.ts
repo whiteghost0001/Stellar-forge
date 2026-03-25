@@ -39,7 +39,7 @@ describe('useLocalStorage', () => {
   });
 
   it('handles localStorage unavailability gracefully', () => {
-    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

@@ -19,11 +19,9 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout
-    const startTime = Date.now()
-    const TIMEOUT_MS = 60000
     const POLL_INTERVAL_MS = 3000
-
+    const TIMEOUT_MS = 60000
+    const startTime = Date.now()
     const pollStatus = async () => {
       // If we've already timed out, don't execute a new fetch
       if (Date.now() - startTime >= TIMEOUT_MS) {
@@ -36,8 +34,7 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
       }
 
       try {
-        const res = await stellarService.getTransaction(txHash)
-        // Assume stellarService returns an object with a status string
+        const res = (await stellarService.getTransaction(txHash)) as { status?: string; error?: string }
         const resStatus = res?.status?.toLowerCase() || ''
         
         if (resStatus === 'success' || resStatus === 'confirmed') {
@@ -53,12 +50,11 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
         }
       } catch (err) {
         console.error('Error polling transaction status:', err)
-        // Keep polling on network errors until timeout to handle brief drops
       }
     }
 
-    intervalId = setInterval(pollStatus, POLL_INTERVAL_MS)
-    pollStatus() // Trigger first check immediately
+    const intervalId = setInterval(pollStatus, POLL_INTERVAL_MS)
+    pollStatus()
 
     return () => {
       clearInterval(intervalId)

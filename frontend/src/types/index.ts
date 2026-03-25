@@ -5,6 +5,9 @@ export interface TokenDeployParams {
   symbol: string
   decimals: number
   initialSupply: string
+  salt: string
+  tokenWasmHash: string
+  feePayment: string
   metadata?: {
     image: File
     description: string
