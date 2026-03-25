@@ -9,6 +9,8 @@ import {
   scValToNative,
   rpc,
   xdr,
+  FeeBumpTransaction,
+  Transaction,
 } from 'stellar-sdk'
 import { STELLAR_CONFIG } from '../config/stellar'
 import { walletService } from './wallet'
@@ -146,6 +148,79 @@ async function pollTransaction(
     await new Promise((r) => setTimeout(r, intervalMs))
   }
   throw new Error(`Transaction ${hash} timed out after ${maxAttempts} attempts`)
+}
+
+// ── Fee Bump Transactions ─────────────────────────────────────────────────────
+
+/**
+ * Wraps an inner (signed) transaction in a fee bump transaction.
+ *
+ * Use this when the inner transaction's source account has insufficient XLM to
+ * cover the base fee. The `feeSource` account pays the network fee instead,
+ * allowing the inner transaction to succeed even with a near-empty balance.
+ *
+ * Flow:
+ *  1. Build and sign the inner transaction normally (e.g. via simulateAndSubmit).
+ *  2. Pass the signed inner XDR and a fee-source address to this function.
+ *  3. The fee-source account signs the resulting fee bump envelope.
+ *  4. Submit the fee bump transaction to the network.
+ *
+ * @param innerTxXdr  - Base64 XDR of the signed inner transaction.
+ * @param feeSource   - Stellar address that will pay the base fee.
+ * @param baseFee     - Fee per operation in stroops (defaults to 10× BASE_FEE
+ *                      to ensure the bump is accepted by the network).
+ * @returns The signed fee bump transaction XDR ready for submission.
+ */
+export async function buildFeeBumpTransaction(
+  innerTxXdr: string,
+  feeSource: string,
+  baseFee: string = String(Number(BASE_FEE) * 10),
+): Promise<string> {
+  const networkPassphrase = getNetworkPassphrase()
+
+  // Reconstruct the inner transaction from XDR
+  const innerTx = TransactionBuilder.fromXDR(innerTxXdr, networkPassphrase) as Transaction
+
+  // Build the fee bump envelope
+  const feeBumpTx = TransactionBuilder.buildFeeBumpTransaction(
+    feeSource,
+    baseFee,
+    innerTx,
+    networkPassphrase,
+  )
+
+  // The fee-source account must sign the fee bump envelope
+  const signedFeeBumpXdr = await walletService.signTransaction(feeBumpTx.toXDR())
+
+  return signedFeeBumpXdr
+}
+
+/**
+ * Submit a signed fee bump transaction and wait for confirmation.
+ *
+ * @param signedFeeBumpXdr - Base64 XDR of the signed fee bump transaction.
+ * @returns The transaction hash on success.
+ */
+export async function submitFeeBumpTransaction(signedFeeBumpXdr: string): Promise<string> {
+  const server = getRpcServer()
+  const networkPassphrase = getNetworkPassphrase()
+
+  const feeBumpTx = TransactionBuilder.fromXDR(
+    signedFeeBumpXdr,
+    networkPassphrase,
+  ) as FeeBumpTransaction
+
+  const submitResult = await server.sendTransaction(feeBumpTx)
+
+  if (submitResult.status === 'ERROR') {
+    throw parseContractError(
+      new Error(submitResult.errorResult?.toXDR('base64') ?? 'Fee bump submission failed'),
+    )
+  }
+
+  await pollTransaction(server, submitResult.hash)
+
+  return submitResult.hash
 }
 
 /**

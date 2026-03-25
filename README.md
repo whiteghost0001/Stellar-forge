@@ -248,6 +248,31 @@ For users deploying tokens, we strongly recommend:
 - Review all parameters carefully using the mainnet deployment checklist
 - Verify contract addresses and transaction details before signing
 
+## Fee Bump Transactions
+
+If a user's XLM balance is too low to cover the network base fee, their transaction will fail. Stellar's [fee bump](https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/fee-bump-transactions) mechanism lets a third-party account (the *fee source*) pay the base fee on behalf of the original sender.
+
+### When to use fee bumps
+
+- The inner transaction's source account has near-zero XLM.
+- You want to sponsor fees for users as part of your application UX.
+- Resubmitting a stuck transaction with a higher fee without re-signing the inner envelope.
+
+### How it works in StellarForge
+
+Two utilities are exported from `frontend/src/services/stellar.ts`:
+
+```ts
+// 1. Wrap a signed inner transaction in a fee bump envelope.
+//    The fee-source account (connected via Freighter) signs the bump.
+const signedFeeBumpXdr = await buildFeeBumpTransaction(innerTxXdr, feeSourceAddress)
+
+// 2. Submit the fee bump and wait for confirmation.
+const txHash = await submitFeeBumpTransaction(signedFeeBumpXdr)
+```
+
+The fee source must have enough XLM to cover the base fee. The inner transaction is not re-signed — only the fee bump envelope requires the fee source's signature.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup and contribution guidelines.
