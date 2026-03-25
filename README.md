@@ -200,6 +200,49 @@ stellar-forge/
 
 We take security seriously. If you discover a security vulnerability, please review our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
 
+### Content Security Policy (CSP)
+
+A strict CSP is defined as a `<meta>` tag in `frontend/index.html`:
+
+```
+default-src 'self';
+connect-src 'self' https://*.stellar.org https://api.pinata.cloud;
+img-src 'self' data: https://gateway.pinata.cloud;
+script-src 'self'
+```
+
+For stronger enforcement, set the CSP as an HTTP response header on your hosting provider instead of (or in addition to) the meta tag — HTTP headers take precedence and support more directives like `frame-ancestors`.
+
+**Vercel** — add to `vercel.json`:
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Netlify** — add to `netlify.toml`:
+```toml
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'"
+```
+
+**Nginx** — add to your server block:
+```nginx
+add_header Content-Security-Policy "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'";
+```
+
 For users deploying tokens, we strongly recommend:
 - Always test on testnet first before mainnet deployment
 - Review all parameters carefully using the mainnet deployment checklist
