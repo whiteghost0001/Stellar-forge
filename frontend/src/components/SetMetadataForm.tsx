@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Input, Button, ConfirmModal } from './UI'
 import { isValidIPFSUri } from '../utils/validation'
 import { useToast } from '../context/ToastContext'
+import { isIpfsConfigured } from '../config/env'
 
 const ESTIMATED_FEE = '0.01' // XLM
 
@@ -16,6 +17,7 @@ export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress 
   const [loading, setLoading] = useState(false)
   const [pending, setPending] = useState(false)
   const { addToast } = useToast()
+  const ipfsReady = isIpfsConfigured()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,6 +43,11 @@ export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress 
 
   return (
     <>
+      {!ipfsReady && (
+        <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-300 px-4 py-3 text-yellow-800 text-sm" role="alert">
+          IPFS upload is disabled. Set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_KEY</code> and <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_SECRET</code> to enable metadata uploads.
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Token Address"
@@ -55,10 +62,13 @@ export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress 
           onChange={(e) => setMetadataUri(e.target.value)}
           placeholder="ipfs://Qm..."
           required
+          disabled={!ipfsReady}
         />
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Submitting...' : 'Set Metadata'}
-        </Button>
+        <div title={!ipfsReady ? 'IPFS credentials are not configured' : undefined}>
+          <Button type="submit" disabled={loading || !ipfsReady}>
+            {loading ? 'Submitting...' : 'Set Metadata'}
+          </Button>
+        </div>
       </form>
 
       <ConfirmModal

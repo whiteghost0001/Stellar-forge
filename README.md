@@ -68,7 +68,11 @@ npm install
 ```
 
 ### 4. Environment Variables
-Create a `.env` file in the `frontend` directory:
+Copy the example file and fill in your values:
+```bash
+cp frontend/.env.example frontend/.env
+```
+
 ```env
 VITE_NETWORK=testnet
 VITE_FACTORY_CONTRACT_ID=<deployed-contract-id>

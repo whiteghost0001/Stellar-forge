@@ -16,6 +16,7 @@ import { MintForm } from './components/MintForm'
 import { BurnForm } from './components/BurnForm'
 import { Dashboard } from './components/Dashboard'
 import { TokenDetail } from './components/TokenDetail'
+import { isFactoryConfigured } from './config/env'
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { wallet } = useWallet()
@@ -140,6 +141,14 @@ function AppContent() {
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
+            </div>
+          </div>
+        )}
+
+        {!isFactoryConfigured() && (
+          <div className="bg-yellow-50 border-b border-yellow-300 p-4" role="alert">
+            <div className="max-w-7xl mx-auto text-yellow-800 text-sm font-medium">
+              ⚠️ Factory contract not configured. Please set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_FACTORY_CONTRACT_ID</code> in your <code className="font-mono bg-yellow-100 px-1 rounded">.env</code> file.
             </div>
           </div>
         )}

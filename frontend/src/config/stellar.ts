@@ -1,8 +1,9 @@
 // Stellar network configuration
+import { ENV } from './env'
 
 export const STELLAR_CONFIG = {
-  network: import.meta.env.VITE_NETWORK || 'testnet',
-  factoryContractId: import.meta.env.VITE_FACTORY_CONTRACT_ID || '',
+  network: ENV.network,
+  factoryContractId: ENV.factoryContractId,
 
   testnet: {
     networkPassphrase: 'Test SDF Network ; September 2015',
