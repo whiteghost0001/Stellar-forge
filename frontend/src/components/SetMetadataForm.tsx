@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from './UI/Input'
 import { Button } from './UI/Button'
 import { isValidIPFSUri } from '../utils/validation'
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export const SetMetadataForm: React.FC<Props> = ({ onSubmit }) => {
+  const { t } = useTranslation()
   const [tokenAddress, setTokenAddress] = useState('')
   const [metadataUri, setMetadataUri] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,15 +19,15 @@ export const SetMetadataForm: React.FC<Props> = ({ onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isValidIPFSUri(metadataUri)) {
-      addToast('Metadata URI must be a valid IPFS URI (e.g. ipfs://Qm...)', 'error')
+      addToast(t('setMetadata.invalidUri'), 'error')
       return
     }
     setLoading(true)
     try {
       await onSubmit(tokenAddress, metadataUri)
-      addToast('Metadata updated successfully', 'success')
+      addToast(t('setMetadata.success'), 'success')
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to set metadata', 'error')
+      addToast(err instanceof Error ? err.message : t('setMetadata.success'), 'error')
     } finally {
       setLoading(false)
     }
@@ -33,22 +35,10 @@ export const SetMetadataForm: React.FC<Props> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        label="Token Address"
-        value={tokenAddress}
-        onChange={(e) => setTokenAddress(e.target.value)}
-        placeholder="G..."
-        required
-      />
-      <Input
-        label="Metadata URI"
-        value={metadataUri}
-        onChange={(e) => setMetadataUri(e.target.value)}
-        placeholder="ipfs://Qm..."
-        required
-      />
+      <Input label={t('setMetadata.tokenAddress')} value={tokenAddress} onChange={(e) => setTokenAddress(e.target.value)} placeholder={t('setMetadata.tokenAddressPlaceholder')} required />
+      <Input label={t('setMetadata.metadataUri')} value={metadataUri} onChange={(e) => setMetadataUri(e.target.value)} placeholder={t('setMetadata.metadataUriPlaceholder')} required />
       <Button type="submit" disabled={loading}>
-        {loading ? 'Submitting...' : 'Set Metadata'}
+        {loading ? t('setMetadata.submitting') : t('setMetadata.submit')}
       </Button>
     </form>
   )
