@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+
 import { Input } from './UI/Input'
+import { TokenMetadata } from './TokenMetadata'
 import { useDebounce } from '../hooks/useDebounce'
 import { stellarService } from '../services/stellar'
 
@@ -24,7 +26,13 @@ export const Dashboard: React.FC = () => {
       />
       <ul className="space-y-2">
         {results.map((r, i) => (
-          <li key={i} className="p-2 border rounded text-sm">{JSON.stringify(r)}</li>
+          <li key={i} className="p-3 border rounded">
+            <TokenMetadata
+              name={r.name ?? 'Unknown'}
+              symbol={r.symbol ?? '???'}
+              metadataUri={r.metadataUri}
+            />
+          </li>
         ))}
       </ul>
     </div>
