@@ -1,5 +1,3 @@
-# Stellar-forge
-StellarForge - Stellar Token Deployer StellarForge is a user-friendly decentralized application (dApp) that enables creators, entrepreneurs, and businesses in emerging markets to deploy custom tokens on the Stellar blockchain without writing a single line of code.
 # StellarForge - Stellar Token Deployer
 
 StellarForge is a user-friendly decentralized application (dApp) that enables creators, entrepreneurs, and businesses in emerging markets to deploy custom tokens on the Stellar blockchain without writing a single line of code.
@@ -12,6 +10,8 @@ StellarForge is a user-friendly decentralized application (dApp) that enables cr
 - **Wallet Integration**: Connect with Freighter wallet for seamless transactions
 - **Burn Functionality**: Burn tokens to reduce supply
 - **Admin Controls**: Update fees and manage the factory
+- **Network Switcher**: Toggle between testnet and mainnet from the UI
+- **Transaction History**: View on-chain contract events with pagination
 - **Testnet & Mainnet Support**: Deploy on both testnet and mainnet
 
 ## Tech Stack
@@ -38,7 +38,7 @@ StellarForge is a user-friendly decentralized application (dApp) that enables cr
 
 - **Rust**: For building Soroban contracts
 - **Node.js** (v18+): For frontend development
-- **Soroban CLI**: For contract deployment and testing
+- **Stellar CLI**: For contract deployment and testing (see setup below)
 - **Freighter Wallet**: Browser extension for Stellar transactions
 
 ## Installation & Setup
@@ -49,11 +49,17 @@ git clone <repository-url>
 cd stellar-forge
 ```
 
-### 2. Setup Soroban Environment
-Run the setup script to install Rust, Soroban CLI, and configure testnet:
+### 2. Setup Stellar CLI Environment
+Run the setup script to install Rust, Stellar CLI, and configure testnet:
 ```bash
 ./scripts/setup-soroban.sh
 ```
+
+> **Note:** The Soroban CLI was renamed to `stellar` in recent versions. All commands below use `stellar`. If you have the old `soroban` binary installed, uninstall it and run the setup script again:
+> ```bash
+> cargo uninstall soroban-cli
+> cargo install stellar-cli --features opt
+> ```
 
 ### 3. Install Frontend Dependencies
 ```bash
@@ -62,7 +68,11 @@ npm install
 ```
 
 ### 4. Environment Variables
-Create a `.env` file in the `frontend` directory:
+Copy the example file and fill in your values:
+```bash
+cp frontend/.env.example frontend/.env
+```
+
 ```env
 VITE_NETWORK=testnet
 VITE_FACTORY_CONTRACT_ID=<deployed-contract-id>
@@ -108,12 +118,14 @@ npm run lint         # Lint code
 
 ### Admin Functions
 - `update_fees(admin, base_fee?, metadata_fee?)`: Update factory fees
+- `pause(admin)` / `unpause(admin)`: Pause or resume the factory
 
 ### View Functions
 - `get_state()`: Get factory state
 - `get_base_fee()`: Get token creation fee
 - `get_metadata_fee()`: Get metadata setting fee
 - `get_token_info(index)`: Get token information by index
+- `get_tokens_by_creator(creator)`: Get all token indices created by a given address
 
 ## Usage
 
@@ -132,13 +144,13 @@ cd contracts/token-factory
 cargo build --target wasm32-unknown-unknown --release
 
 # Deploy to testnet
-soroban contract deploy \
+stellar contract deploy \
   --wasm target/wasm32-unknown-unknown/release/token_factory.wasm \
   --source <your-secret-key> \
   --network testnet
 
 # Initialize the contract
-soroban contract invoke \
+stellar contract invoke \
   --id <contract-id> \
   --source <your-secret-key> \
   --network testnet \
@@ -170,24 +182,104 @@ stellar-forge/
 │           └── test.rs       # Contract tests
 ├── frontend/                  # React application
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── services/         # API integrations
+│   │   ├── components/       # UI components (NetworkSwitcher, TransactionHistory, ...)
+│   │   ├── context/          # React contexts (Wallet, Toast, Network)
+│   │   ├── services/         # API integrations (stellar, wallet, ipfs)
 │   │   ├── hooks/            # React hooks
 │   │   ├── config/           # Configuration files
+│   │   ├── types/            # TypeScript type definitions
 │   │   └── utils/            # Utility functions
 │   ├── package.json
 │   └── vite.config.ts
 ├── scripts/                   # Setup scripts
+│   └── setup-soroban.sh      # Installs Rust + Stellar CLI + configures testnet
 └── README.md
 ```
 
+## Security
+
+We take security seriously. If you discover a security vulnerability, please review our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
+
+### Content Security Policy (CSP)
+
+A strict CSP is defined as a `<meta>` tag in `frontend/index.html`:
+
+```
+default-src 'self';
+connect-src 'self' https://*.stellar.org https://api.pinata.cloud;
+img-src 'self' data: https://gateway.pinata.cloud;
+script-src 'self'
+```
+
+For stronger enforcement, set the CSP as an HTTP response header on your hosting provider instead of (or in addition to) the meta tag — HTTP headers take precedence and support more directives like `frame-ancestors`.
+
+**Vercel** — add to `vercel.json`:
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Netlify** — add to `netlify.toml`:
+```toml
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'"
+```
+
+**Nginx** — add to your server block:
+```nginx
+add_header Content-Security-Policy "default-src 'self'; connect-src 'self' https://*.stellar.org https://api.pinata.cloud; img-src 'self' data: https://gateway.pinata.cloud; script-src 'self'";
+```
+
+For users deploying tokens, we strongly recommend:
+- Always test on testnet first before mainnet deployment
+- Review all parameters carefully using the mainnet deployment checklist
+- Verify contract addresses and transaction details before signing
+
+## Fee Bump Transactions
+
+If a user's XLM balance is too low to cover the network base fee, their transaction will fail. Stellar's [fee bump](https://developers.stellar.org/docs/learn/encyclopedia/transactions-specialized/fee-bump-transactions) mechanism lets a third-party account (the *fee source*) pay the base fee on behalf of the original sender.
+
+### When to use fee bumps
+
+- The inner transaction's source account has near-zero XLM.
+- You want to sponsor fees for users as part of your application UX.
+- Resubmitting a stuck transaction with a higher fee without re-signing the inner envelope.
+
+### How it works in StellarForge
+
+Two utilities are exported from `frontend/src/services/stellar.ts`:
+
+```ts
+// 1. Wrap a signed inner transaction in a fee bump envelope.
+//    The fee-source account (connected via Freighter) signs the bump.
+const signedFeeBumpXdr = await buildFeeBumpTransaction(innerTxXdr, feeSourceAddress)
+
+// 2. Submit the fee bump and wait for confirmation.
+const txHash = await submitFeeBumpTransaction(signedFeeBumpXdr)
+```
+
+The fee source must have enough XLM to cover the base fee. The inner transaction is not re-signed — only the fee bump envelope requires the fee source's signature.
+
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup and contribution guidelines.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## License
 

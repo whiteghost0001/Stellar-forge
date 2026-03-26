@@ -1,0 +1,14 @@
+{
+  "name": "stellar-forge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "StellarForge - Stellar Token Deployer",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.0"
+  }
+}
