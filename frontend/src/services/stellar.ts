@@ -420,6 +420,11 @@ async function callView(
 
 // ── StellarService ────────────────────────────────────────────────────────────
 
+export interface FactoryState {
+  baseFee: number   // in stroops
+  metadataFee: number // in stroops
+}
+
 export class StellarService {
   /**
    * Deploy a new token via the factory's create_token function.
@@ -783,6 +788,12 @@ export class StellarService {
   async getAllTokens(): Promise<TokenInfo[]> {
     // TODO: replace with real contract/horizon query
     return []
+  }
+
+  async getFactoryState(): Promise<FactoryState> {
+    // Implementation for getting factory state (fees) from the contract
+    console.log('Getting factory state')
+    return { baseFee: 70000000, metadataFee: 10000000 } // 7 XLM, 1 XLM in stroops
   }
 }
 
