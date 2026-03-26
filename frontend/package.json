@@ -51,6 +51,7 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.2",
     "vite-bundle-analyzer": "^1.0.6",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"
   }
 }
