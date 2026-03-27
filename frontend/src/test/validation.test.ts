@@ -57,7 +57,7 @@ describe('validateTokenParams - decimals', () => {
   })
 
   it('rejects missing decimals', () => {
-    const { valid, errors } = validateTokenParams({ ...base, decimals: undefined })
+    const { valid, errors } = validateTokenParams({ ...base })
     expect(valid).toBe(false)
     expect(errors.decimals).toBeDefined()
   })

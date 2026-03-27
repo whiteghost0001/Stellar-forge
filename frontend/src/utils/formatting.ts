@@ -64,7 +64,9 @@ export const formatTokenAmount = (amount: string | number, decimals: number): st
 }
 
 export const parseTokenAmount = (display: string, decimals: number): string => {
-  const [whole, frac = ''] = display.split('.')
+  const parts = display.split('.')
+  const whole = parts[0] ?? '0'
+  const frac = parts[1] ?? ''
   const fracPadded = frac.padEnd(decimals, '0').slice(0, decimals)
   return (BigInt(whole) * BigInt(10 ** decimals) + BigInt(fracPadded)).toString()
 }

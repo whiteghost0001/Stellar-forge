@@ -4,7 +4,7 @@ import { walletService } from '../services/wallet'
 interface WalletState {
   address: string | null
   isConnected: boolean
-  balance?: string
+  balance: string | undefined
 }
 
 interface WalletContextValue {

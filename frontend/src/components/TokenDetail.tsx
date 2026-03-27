@@ -203,17 +203,17 @@ export const TokenDetail: React.FC = () => {
       </div>
 
       {/* Inline action panels */}
-      {activePanel === 'mint' && (
+      {activePanel === 'mint' && address && (
         <Card title="Mint More Tokens">
           <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
         </Card>
       )}
-      {activePanel === 'burn' && (
+      {activePanel === 'burn' && address && (
         <Card title="Burn Tokens">
           <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
         </Card>
       )}
-      {activePanel === 'metadata' && (
+      {activePanel === 'metadata' && address && (
         <Card title="Set Metadata">
           <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
         </Card>
