@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "token-factory",
+    "token-factory/fuzz",
 ]
 resolver = "2"

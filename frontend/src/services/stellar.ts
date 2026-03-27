@@ -1,4 +1,6 @@
 // Stellar SDK integration service
+import { STELLAR_CONFIG } from '../config/stellar'
+import type { ContractEvent, ContractEventType, DeploymentResult, GetEventsResult } from '../types'
 import {
   Contract,
   TransactionBuilder,
@@ -269,6 +271,7 @@ function scValToString(val: any): string {
       if (addr.switch() === xdr.ScAddressType.scAddressTypeAccount()) {
         return addr.accountId().publicKey().toString()
       }
+      return Array.from(addr.contractId() as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
       const bytes: Uint8Array = addr.contractId()
       return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
     }
@@ -283,6 +286,8 @@ function scValToString(val: any): string {
     if (type === xdr.ScValType.scvVoid()) return 'none'
     if (type === xdr.ScValType.scvBool()) return val.b().toString()
     if (type === xdr.ScValType.scvVec()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items: string[] = (val.vec() ?? []).map((v: any) => scValToString(v, xdr))
       const items: string[] = (val.vec() ?? []).map((v: xdr.ScVal) => scValToString(v))
       return items.join(', ')
     }
@@ -313,6 +318,8 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
     if (!EVENT_TOPICS.includes(eventType)) return null
 
     const valueVal = xdr.ScVal.fromXDR(raw.value, 'base64')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items: any[] = valueVal.vec() ?? []
     const items: unknown[] = valueVal.vec() ?? []
 
     const data: Record<string, string> = {}
@@ -411,6 +418,9 @@ async function callView(
 // ── StellarService ────────────────────────────────────────────────────────────
 
 export class StellarService {
+  async deployToken(params: unknown): Promise<DeploymentResult> {
+    console.log('Deploying token:', params)
+    return { success: true, tokenAddress: '', transactionHash: '' }
   private network: 'testnet' | 'mainnet'
 
   constructor(network: 'testnet' | 'mainnet' = 'testnet') {
