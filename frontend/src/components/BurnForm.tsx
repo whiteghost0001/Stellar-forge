@@ -81,7 +81,7 @@ export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress
         {amountExceedsBalance && (
           <p className="text-sm text-red-500">Amount exceeds your balance of {balance}</p>
         )}
-        <Button type="submit" variant="secondary" disabled={amountExceedsBalance}>
+        <Button type="submit" variant="secondary" disabled={amountExceedsBalance} className="w-full sm:w-auto">
           {t('burnForm.burn')}
         </Button>
       </form>

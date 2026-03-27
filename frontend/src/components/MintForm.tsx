@@ -130,7 +130,7 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
           min="0"
           required
         />
-        <Button type="submit" variant="primary">Mint</Button>
+        <Button type="submit" variant="primary" className="w-full sm:w-auto">Mint</Button>
       </form>
 
       <ConfirmModal

@@ -10,7 +10,9 @@
     "mint": "Mint",
     "burn": "Burn",
     "tokens": "Tokens",
-    "ariaLabel": "Primary"
+    "ariaLabel": "Primary",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu"
   },
   "wallet": {
     "connect": "Connect Wallet",
