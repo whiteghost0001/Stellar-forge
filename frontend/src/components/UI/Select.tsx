@@ -29,9 +29,16 @@ export const Select: React.FC<SelectProps> = ({
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label
+          htmlFor={selectId}
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
           {label}
-          {required && <span aria-hidden="true" className="ml-1 text-red-600 dark:text-red-400">*</span>}
+          {required && (
+            <span aria-hidden="true" className="ml-1 text-red-600 dark:text-red-400">
+              *
+            </span>
+          )}
         </label>
       )}
       <select

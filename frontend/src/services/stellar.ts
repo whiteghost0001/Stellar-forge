@@ -1,6 +1,14 @@
 // Stellar SDK integration service
-import { STELLAR_CONFIG } from '../config/stellar'
-import type { ContractEvent, ContractEventType, DeploymentResult, GetEventsResult } from '../types'
+import { STELLAR_CONFIG, NETWORK_CONFIGS } from '../config/stellar'
+import { walletService } from './wallet'
+import type {
+  ContractEvent,
+  ContractEventType,
+  DeploymentResult,
+  FactoryState,
+  GetEventsResult,
+  TokenInfo,
+} from '../types'
 import {
   Contract,
   TransactionBuilder,
@@ -14,16 +22,6 @@ import {
   FeeBumpTransaction,
   Transaction,
 } from 'stellar-sdk'
-import { STELLAR_CONFIG, NETWORK_CONFIGS } from '../config/stellar'
-import { walletService } from './wallet'
-import type {
-  ContractEvent,
-  ContractEventType,
-  DeploymentResult,
-  FactoryState,
-  GetEventsResult,
-  TokenInfo,
-} from '../types'
 
 export type { FactoryState } from '../types'
 
@@ -122,7 +120,9 @@ async function simulateAndSubmit(
   )
 
   if (submitResult.status === 'ERROR') {
-    throw parseContractError(new Error(submitResult.errorResult?.toXDR('base64') ?? 'Submission failed'))
+    throw parseContractError(
+      new Error(submitResult.errorResult?.toXDR('base64') ?? 'Submission failed'),
+    )
   }
 
   const hash = submitResult.hash
@@ -237,8 +237,8 @@ interface RpcEventResponse {
   pagingToken: string
   inSuccessfulContractCall: boolean
   txHash: string
-  topic: string[]   // base64-encoded XDR ScVal[]
-  value: string     // base64-encoded XDR ScVal
+  topic: string[] // base64-encoded XDR ScVal[]
+  value: string // base64-encoded XDR ScVal
 }
 
 interface RpcGetEventsResult {
@@ -271,9 +271,13 @@ function scValToString(val: any): string {
       if (addr.switch() === xdr.ScAddressType.scAddressTypeAccount()) {
         return addr.accountId().publicKey().toString()
       }
-      return Array.from(addr.contractId() as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
+      return Array.from(addr.contractId() as Uint8Array)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
       const bytes: Uint8Array = addr.contractId()
-      return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+      return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
     }
     if (type === xdr.ScValType.scvI128()) {
       const hi = BigInt(v.i128().hi().toString())
@@ -286,8 +290,6 @@ function scValToString(val: any): string {
     if (type === xdr.ScValType.scvVoid()) return 'none'
     if (type === xdr.ScValType.scvBool()) return val.b().toString()
     if (type === xdr.ScValType.scvVec()) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const items: string[] = (val.vec() ?? []).map((v: any) => scValToString(v, xdr))
       const items: string[] = (val.vec() ?? []).map((v: xdr.ScVal) => scValToString(v))
       return items.join(', ')
     }
@@ -318,8 +320,6 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
     if (!EVENT_TOPICS.includes(eventType)) return null
 
     const valueVal = xdr.ScVal.fromXDR(raw.value, 'base64')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const items: any[] = valueVal.vec() ?? []
     const items: unknown[] = valueVal.vec() ?? []
 
     const data: Record<string, string> = {}
@@ -353,9 +353,7 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
       id: raw.id,
       type: eventType,
       ledger: raw.ledger,
-      timestamp: raw.ledgerClosedAt
-        ? Math.floor(new Date(raw.ledgerClosedAt).getTime() / 1000)
-        : 0,
+      timestamp: raw.ledgerClosedAt ? Math.floor(new Date(raw.ledgerClosedAt).getTime() / 1000) : 0,
       txHash: raw.txHash,
       data,
     }
@@ -366,7 +364,11 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
 
 // ── JSON-RPC helper ───────────────────────────────────────────────────────────
 
-async function rpcCall<T>(method: string, params: unknown, network: 'testnet' | 'mainnet'): Promise<T> {
+async function rpcCall<T>(
+  method: string,
+  params: unknown,
+  network: 'testnet' | 'mainnet',
+): Promise<T> {
   const res = await fetch(getRpcUrl(network), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -418,9 +420,6 @@ async function callView(
 // ── StellarService ────────────────────────────────────────────────────────────
 
 export class StellarService {
-  async deployToken(params: unknown): Promise<DeploymentResult> {
-    console.log('Deploying token:', params)
-    return { success: true, tokenAddress: '', transactionHash: '' }
   private network: 'testnet' | 'mainnet'
 
   constructor(network: 'testnet' | 'mainnet' = 'testnet') {
@@ -475,10 +474,7 @@ export class StellarService {
 
       const txResult = await server.getTransaction(hash)
       let tokenAddress = ''
-      if (
-        txResult.status === rpc.Api.GetTransactionStatus.SUCCESS &&
-        txResult.returnValue
-      ) {
+      if (txResult.status === rpc.Api.GetTransactionStatus.SUCCESS && txResult.returnValue) {
         tokenAddress = scValToNative(txResult.returnValue) as string
       }
 
@@ -525,10 +521,7 @@ export class StellarService {
     }
   }
 
-  async burnTokens(params: {
-    tokenAddress: string
-    amount: string
-  }): Promise<string> {
+  async burnTokens(params: { tokenAddress: string; amount: string }): Promise<string> {
     try {
       const contractId = STELLAR_CONFIG.factoryContractId
       if (!contractId) throw new Error('Factory contract ID is not configured')
@@ -642,7 +635,14 @@ export class StellarService {
 
     try {
       const server = getRpcServer(this.network)
-      const retval = await callView(server, contractId, 'get_state', [], sourceAddress, this.network)
+      const retval = await callView(
+        server,
+        contractId,
+        'get_state',
+        [],
+        sourceAddress,
+        this.network,
+      )
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const native = scValToNative(retval) as any
@@ -679,7 +679,7 @@ export class StellarService {
    */
   async accountExists(address: string): Promise<boolean> {
     try {
-      const { horizonUrl } = getNetworkConfig()
+      const { horizonUrl } = getNetworkConfig(this.network)
       const res = await fetch(`${horizonUrl}/accounts/${address}`)
 
       if (res.status === 404) {

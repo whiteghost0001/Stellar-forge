@@ -60,7 +60,9 @@ describe('MintForm', () => {
     })
 
     expect(
-      await screen.findByText('This address does not have a Stellar account yet. It may need to be funded first.'),
+      await screen.findByText(
+        'This address does not have a Stellar account yet. It may need to be funded first.',
+      ),
     ).toBeInTheDocument()
   })
 })

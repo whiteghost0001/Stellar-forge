@@ -20,7 +20,11 @@ function setup(network: 'testnet' | 'mainnet', wallet = connectedWallet) {
     wallet,
     refreshBalance: mockRefreshBalance,
   } as unknown as ReturnType<typeof useWalletContext>)
-  vi.mocked(useToast).mockReturnValue({ addToast: mockAddToast } as ReturnType<typeof useToast>)
+  vi.mocked(useToast).mockReturnValue({
+    addToast: mockAddToast,
+    toasts: [],
+    removeToast: vi.fn(),
+  } as ReturnType<typeof useToast>)
   return render(<FundbotButton />)
 }
 
@@ -38,7 +42,7 @@ describe('FundbotButton', () => {
   })
 
   it('does not render when wallet is disconnected', () => {
-    setup('testnet', { address: null, isConnected: false })
+    setup('testnet', { address: '', isConnected: false, balance: '0' })
     expect(screen.queryByRole('button')).toBeNull()
   })
 
@@ -65,7 +69,7 @@ describe('FundbotButton', () => {
         ok: false,
         statusText: 'Too Many Requests',
         json: async () => ({ detail: 'Account already funded' }),
-      })
+      }),
     )
 
     setup('testnet')
@@ -86,8 +90,8 @@ describe('FundbotButton', () => {
     fireEvent.click(screen.getByRole('button', { name: /fund wallet/i }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    expect(fetchMock.mock.calls[0][0]).toContain('friendbot.stellar.org')
-    expect(fetchMock.mock.calls[0][0]).toContain('GABC123')
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('friendbot.stellar.org')
+    expect(fetchMock.mock.calls[0]?.[0]).toContain('GABC123')
 
     vi.unstubAllGlobals()
   })

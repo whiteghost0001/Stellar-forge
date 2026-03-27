@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTokenAmount, parseTokenAmount } from './formatting'
+import { formatTokenAmount, parseTokenAmount, formatAddress } from './formatting'
 
 describe('formatTokenAmount', () => {
   it('formats with 7 decimals', () => {
@@ -46,5 +46,29 @@ describe('parseTokenAmount', () => {
 
   it('truncates long fractional part', () => {
     expect(parseTokenAmount('1.12345678', 7)).toBe('11234567')
+  })
+})
+
+describe('formatAddress', () => {
+  const STELLAR_ADDRESS = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN'
+
+  it('truncates a full Stellar address with defaults', () => {
+    expect(formatAddress(STELLAR_ADDRESS)).toBe('GAAZI4...CCWN')
+  })
+
+  it('respects custom prefixLen and suffixLen', () => {
+    expect(formatAddress(STELLAR_ADDRESS, 4, 4)).toBe('GAAZ...CCWN')
+  })
+
+  it('returns the address unchanged when shorter than prefix + suffix', () => {
+    expect(formatAddress('GABCD', 6, 4)).toBe('GABCD')
+  })
+
+  it('returns the address unchanged when exactly prefix + suffix length', () => {
+    expect(formatAddress('GABC1234', 4, 4)).toBe('GABC1234')
+  })
+
+  it('returns empty string for empty input', () => {
+    expect(formatAddress('')).toBe('')
   })
 })

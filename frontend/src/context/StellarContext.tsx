@@ -13,10 +13,13 @@ const StellarContext = createContext<StellarContextValue | null>(null)
 export function StellarProvider({ children }: { children: ReactNode }) {
   const { network } = useNetwork()
 
-  const value = useMemo(() => ({
-    stellarService: new StellarService(network),
-    ipfsService: new IPFSService(),
-  }), [network])
+  const value = useMemo(
+    () => ({
+      stellarService: new StellarService(network),
+      ipfsService: new IPFSService(),
+    }),
+    [network],
+  )
 
   return <StellarContext.Provider value={value}>{children}</StellarContext.Provider>
 }

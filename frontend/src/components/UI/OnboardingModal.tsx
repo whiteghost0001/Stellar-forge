@@ -54,10 +54,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ forceOpen, onC
   useEffect(() => {
     if (!visible) return
     closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose()
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
   const handleClose = () => {
@@ -71,6 +73,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ forceOpen, onC
 
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
+  if (!current) return null
 
   return (
     <div
@@ -96,12 +99,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ forceOpen, onC
         </div>
 
         {/* Body */}
-        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-          {current.body}
-        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{current.body}</p>
 
         {/* Step indicators */}
-        <div className="flex gap-1.5 justify-center" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+        <div
+          className="flex gap-1.5 justify-center"
+          aria-label={`Step ${step + 1} of ${STEPS.length}`}
+        >
           {STEPS.map((_, i) => (
             <span
               key={i}
@@ -119,7 +123,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ forceOpen, onC
           </Button>
           <div className="flex gap-2">
             {step > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setStep(s => s - 1)}>
+              <Button variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}>
                 Back
               </Button>
             )}
@@ -128,7 +132,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ forceOpen, onC
                 Get Started
               </Button>
             ) : (
-              <Button variant="primary" size="sm" onClick={() => setStep(s => s + 1)}>
+              <Button variant="primary" size="sm" onClick={() => setStep((s) => s + 1)}>
                 Next
               </Button>
             )}

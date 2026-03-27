@@ -24,7 +24,7 @@ export const TosProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPendingCallback(() => proceed)
       }
     },
-    [accepted]
+    [accepted],
   )
 
   const handleAccept = () => {

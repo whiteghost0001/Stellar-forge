@@ -77,9 +77,7 @@ export interface UseTokensResult {
 export function useTokens(creator?: string): UseTokensResult {
   const cacheKey = creator ?? ''
 
-  const [allTokens, setAllTokens] = useState<TokenInfo[]>(
-    () => cache.get(cacheKey)?.tokens ?? [],
-  )
+  const [allTokens, setAllTokens] = useState<TokenInfo[]>(() => cache.get(cacheKey)?.tokens ?? [])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [page, setPageRaw] = useState(1)

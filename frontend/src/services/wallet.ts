@@ -3,7 +3,7 @@ import {
   getAddress,
   signTransaction as freighterSignTransaction,
 } from '@stellar/freighter-api'
-import { STELLAR_CONFIG, NETWORK_CONFIGS } from '../config/stellar'
+import { NETWORK_CONFIGS } from '../config/stellar'
 
 interface HorizonBalance {
   asset_type: string
@@ -21,17 +21,17 @@ export class WalletService {
 
   async isInstalled(): Promise<boolean> {
     try {
-      const result = await isConnected();
-      return !!result.isConnected;
+      const result = await isConnected()
+      return !!result.isConnected
     } catch {
-      return false;
+      return false
     }
   }
 
   async connect(): Promise<string> {
     if (!(await this.isInstalled())) {
       throw new Error(
-        `Freighter wallet is not installed. Please install it from ${FREIGHTER_INSTALL_URL}`
+        `Freighter wallet is not installed. Please install it from ${FREIGHTER_INSTALL_URL}`,
       )
     }
 
@@ -46,7 +46,7 @@ export class WalletService {
 
       if (!addressObj.address) {
         throw new Error(
-          `Freighter wallet is not available. Please install or unlock it from ${FREIGHTER_INSTALL_URL}`
+          `Freighter wallet is not available. Please install or unlock it from ${FREIGHTER_INSTALL_URL}`,
         )
       }
 
@@ -90,9 +90,7 @@ export class WalletService {
       if (error instanceof Error) {
         // Check for network mismatch
         if (error.message.includes('network')) {
-          throw new Error(
-            `Network mismatch: Please switch Freighter to ${network}`
-          )
+          throw new Error(`Network mismatch: Please switch Freighter to ${network}`)
         }
         throw new Error(`Failed to sign transaction: ${error.message}`)
       }
@@ -116,9 +114,7 @@ export class WalletService {
       const accountData: HorizonAccountResponse = await response.json()
 
       // Find native XLM balance
-      const nativeBalance = accountData.balances.find(
-        (balance) => balance.asset_type === 'native'
-      )
+      const nativeBalance = accountData.balances.find((balance) => balance.asset_type === 'native')
 
       return nativeBalance ? nativeBalance.balance : '0'
     } catch (error) {
@@ -156,14 +152,6 @@ export class WalletService {
 
   getConnectedAddress(): string | null {
     return this.connectedAddress
-  }
-
-  private getActiveNetwork(): 'testnet' | 'mainnet' {
-    try {
-      const stored = localStorage.getItem('stellarforge_network')
-      if (stored === 'mainnet' || stored === 'testnet') return stored
-    } catch { /* ignore */ }
-    return STELLAR_CONFIG.network as 'testnet' | 'mainnet'
   }
 }
 

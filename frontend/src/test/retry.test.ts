@@ -162,10 +162,7 @@ describe('withRetry', () => {
   })
 
   it('should handle successful retry after transient failure', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce({ status: 503 })
-      .mockResolvedValue('recovered')
+    const fn = vi.fn().mockRejectedValueOnce({ status: 503 }).mockResolvedValue('recovered')
 
     const promise = withRetry(fn, { baseDelayMs: 100 })
 

@@ -20,10 +20,7 @@ export const FundbotButton: React.FC = () => {
     try {
       await fund(wallet.address!)
     } catch (err) {
-      addToast(
-        err instanceof Error ? err.message : 'Friendbot is currently unavailable',
-        'error'
-      )
+      addToast(err instanceof Error ? err.message : 'Friendbot is currently unavailable', 'error')
     }
   }
 

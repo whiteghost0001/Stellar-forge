@@ -56,9 +56,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             {title}
           </h2>
 
-          {description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
-          )}
+          {description && <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>}
 
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-600">
             {details.map(({ label, value }) => (

@@ -2,9 +2,9 @@ import { useToast, type Toast } from '../../context/ToastContext'
 
 const STYLES: Record<Toast['variant'], string> = {
   success: 'bg-green-600',
-  error:   'bg-red-600',
+  error: 'bg-red-600',
   warning: 'bg-yellow-500',
-  info:    'bg-gray-800',
+  info: 'bg-gray-800',
 }
 
 const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
@@ -32,7 +32,9 @@ export const ToastContainer: React.FC = () => {
   if (!toasts.length) return null
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2" aria-label="Notifications">
-      {toasts.map((t) => <ToastItem key={t.id} toast={t} />)}
+      {toasts.map((t) => (
+        <ToastItem key={t.id} toast={t} />
+      ))}
     </div>
   )
 }

@@ -35,7 +35,8 @@ describe('validateTokenParams - name', () => {
   })
 
   it('rejects undefined name', () => {
-    const { valid: ok, errors } = validateTokenParams({ ...valid, name: undefined })
+    const { name: _n, ...rest } = valid
+    const { valid: ok, errors } = validateTokenParams(rest)
     expect(ok).toBe(false)
     expect(errors.name).toBeDefined()
   })
@@ -63,7 +64,8 @@ describe('validateTokenParams - symbol', () => {
   })
 
   it('rejects undefined symbol', () => {
-    const { valid: ok, errors } = validateTokenParams({ ...valid, symbol: undefined })
+    const { symbol: _s, ...rest } = valid
+    const { valid: ok, errors } = validateTokenParams(rest)
     expect(ok).toBe(false)
     expect(errors.symbol).toBeDefined()
   })
@@ -91,7 +93,8 @@ describe('validateTokenParams - initialSupply', () => {
   })
 
   it('rejects undefined supply', () => {
-    const { valid: ok, errors } = validateTokenParams({ ...valid, initialSupply: undefined })
+    const { initialSupply: _i, ...rest } = valid
+    const { valid: ok, errors } = validateTokenParams(rest)
     expect(ok).toBe(false)
     expect(errors.initialSupply).toBeDefined()
   })

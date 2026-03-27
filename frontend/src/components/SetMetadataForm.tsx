@@ -12,7 +12,10 @@ interface Props {
   onSubmit: (tokenAddress: string, metadataUri: string) => Promise<void>
 }
 
-export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress = '', onSubmit }) => {
+export const SetMetadataForm: React.FC<Props> = ({
+  tokenAddress: initialAddress = '',
+  onSubmit,
+}) => {
   const { t } = useTranslation()
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [metadataUri, setMetadataUri] = useState('')
@@ -46,8 +49,14 @@ export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress 
   return (
     <>
       {!ipfsReady && (
-        <div className="mb-4 rounded-lg bg-yellow-50 border border-yellow-300 px-4 py-3 text-yellow-800 text-sm" role="alert">
-          IPFS upload is disabled. Set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_KEY</code> and <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_SECRET</code> to enable metadata uploads.
+        <div
+          className="mb-4 rounded-lg bg-yellow-50 border border-yellow-300 px-4 py-3 text-yellow-800 text-sm"
+          role="alert"
+        >
+          IPFS upload is disabled. Set{' '}
+          <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_KEY</code> and{' '}
+          <code className="font-mono bg-yellow-100 px-1 rounded">VITE_IPFS_API_SECRET</code> to
+          enable metadata uploads.
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">

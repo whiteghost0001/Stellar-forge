@@ -34,9 +34,12 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
       }
 
       try {
-        const res = (await stellarService.getTransaction(txHash)) as { status?: string; error?: string }
+        const res = (await stellarService.getTransaction(txHash)) as {
+          status?: string
+          error?: string
+        }
         const resStatus = res?.status?.toLowerCase() || ''
-        
+
         if (resStatus === 'success' || resStatus === 'confirmed') {
           setStatus('success')
           clearInterval(intervalId)
@@ -80,7 +83,12 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
           <span className="font-bold text-lg text-gray-800">Transaction Successful</span>
@@ -106,7 +114,12 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </div>
           <span className="font-bold text-lg text-gray-800">Transaction Failed</span>

@@ -13,7 +13,10 @@ interface BurnFormProps {
   onSuccess?: () => void
 }
 
-export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress = '', onSuccess }) => {
+export const BurnForm: React.FC<BurnFormProps> = ({
+  tokenAddress: initialAddress = '',
+  onSuccess,
+}) => {
   const { t } = useTranslation()
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [amount, setAmount] = useState('')
@@ -31,7 +34,10 @@ export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress
 
   useEffect(() => {
     if (!debouncedAddress) return
-    stellarService.getTokenInfo(debouncedAddress).then(setTokenInfo).catch(() => setTokenInfo(null))
+    stellarService
+      .getTokenInfo(debouncedAddress)
+      .then(setTokenInfo)
+      .catch(() => setTokenInfo(null))
   }, [debouncedAddress])
 
   const amountExceedsBalance =
@@ -65,9 +71,7 @@ export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress
           </p>
         )}
         {wallet.address && debouncedAddress && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Your balance: {balance}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Your balance: {balance}</p>
         )}
         <Input
           label="Amount"
@@ -81,7 +85,12 @@ export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress
         {amountExceedsBalance && (
           <p className="text-sm text-red-500">Amount exceeds your balance of {balance}</p>
         )}
-        <Button type="submit" variant="secondary" disabled={amountExceedsBalance} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={amountExceedsBalance}
+          className="w-full sm:w-auto"
+        >
           {t('burnForm.burn')}
         </Button>
       </form>
@@ -91,7 +100,10 @@ export const BurnForm: React.FC<BurnFormProps> = ({ tokenAddress: initialAddress
         title="Confirm Burn"
         description="This will permanently destroy the specified token amount."
         details={[
-          { label: 'Token', value: tokenInfo ? `${tokenInfo.name} (${tokenInfo.symbol})` : tokenAddress },
+          {
+            label: 'Token',
+            value: tokenInfo ? `${tokenInfo.name} (${tokenInfo.symbol})` : tokenAddress,
+          },
           { label: 'Amount to Burn', value: amount },
         ]}
         onConfirm={handleConfirm}
