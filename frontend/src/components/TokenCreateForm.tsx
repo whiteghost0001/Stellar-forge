@@ -89,11 +89,11 @@ export const TokenCreateForm: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('tokenForm.descriptionPlaceholder')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
             rows={3}
           />
         </div>
-        <Button type="submit" disabled={isDeploying}>
+        <Button type="submit" disabled={isDeploying} className="w-full sm:w-auto">
           {isDeploying ? t('tokenForm.deploying') : t('tokenForm.deploy')}
         </Button>
       </form>

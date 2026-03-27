@@ -101,6 +101,19 @@ cd contracts/token-factory
 cargo test
 ```
 
+### Run Contract Fuzz Tests
+
+Fuzz testing with random inputs discovers edge cases and potential crashes:
+
+```bash
+cd contracts/token-factory/fuzz
+cargo fuzz run fuzz_create_token -- -timeout=60    # Test token creation
+cargo fuzz run fuzz_fee_arithmetic -- -timeout=60  # Test fee calculations
+cargo fuzz run fuzz_burn -- -timeout=60            # Test burn operations
+```
+
+For more details on fuzz testing setup and interpretation, see [contracts/token-factory/fuzz/README.md](contracts/token-factory/fuzz/README.md).
+
 ### Frontend
 ```bash
 cd frontend

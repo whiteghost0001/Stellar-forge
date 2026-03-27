@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 
@@ -7,11 +8,20 @@ interface NavBarProps {
 
 export const NavBar: React.FC<NavBarProps> = ({ onHelpClick }) => {
   const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
 
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-md text-sm font-medium ${
+    `block px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center ${
       isActive ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'
     }`
+
+  const links = [
+    { to: '/', label: t('nav.home'), end: true },
+    { to: '/create', label: t('nav.create') },
+    { to: '/mint', label: t('nav.mint') },
+    { to: '/burn', label: t('nav.burn') },
+    { to: '/tokens', label: t('nav.tokens') },
+  ]
 
   return (
     <nav aria-label={t('nav.ariaLabel')} className="mt-4 mb-4">

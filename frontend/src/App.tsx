@@ -96,27 +96,44 @@ function AppContent() {
                       <div className="text-sm font-medium text-gray-900">
                         {wallet.address && truncateAddress(wallet.address)}
                       </div>
-                      {wallet.balance && (
-                        <div className="text-xs text-gray-600">{formatXLM(wallet.balance)}</div>
-                      )}
+                      <Button onClick={handleDisconnect} variant="secondary" size="sm">
+                        {t('wallet.disconnect')}
+                      </Button>
                     </div>
-                    <Button onClick={handleDisconnect} variant="secondary" size="sm">
-                      {t('wallet.disconnect')}
+                  ) : (
+                    <Button onClick={handleConnect} disabled={isConnecting} size="sm">
+                      {isConnecting ? (
+                        <span className="flex items-center gap-2">
+                          <Spinner size="sm" />
+                          <span className="hidden sm:inline">{t('wallet.connecting')}</span>
+                        </span>
+                      ) : (
+                        t('wallet.connect')
+                      )}
                     </Button>
-                  </div>
-                ) : (
-                  <Button onClick={handleConnect} disabled={isConnecting} size="sm">
-                    {isConnecting ? (
-                      <span className="flex items-center gap-2">
-                        <Spinner size="sm" />
-                        {t('wallet.connecting')}
-                      </span>
-                    ) : (
-                      t('wallet.connect')
-                    )}
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
+
+              {/* Wallet address on mobile when connected */}
+              {wallet.isConnected && wallet.address && (
+                <div className="sm:hidden text-xs text-gray-600 truncate">
+                  {truncateAddress(wallet.address)}
+                  {wallet.balance && <span className="ml-2">{formatXLM(wallet.balance)}</span>}
+                </div>
+              )}
+
+              {/* Install Freighter link on mobile */}
+              {!isInstalled && (
+                <a
+                  href="https://www.freighter.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sm:hidden text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  {t('wallet.installFreighter')}
+                </a>
+              )}
             </div>
 
             <NavBar onHelpClick={() => setShowOnboarding(true)} />
@@ -131,8 +148,8 @@ function AppContent() {
           </div>
         )}
 
-        <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
+        <main id="main-content" className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+          <div className="py-2 sm:py-4">
             {error && (
               <div
                 className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg"
@@ -143,7 +160,7 @@ function AppContent() {
               </div>
             )}
 
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <Routes>
                 <Route path="/" element={<ErrorBoundary><Home onGetStarted={handleGetStarted} /></ErrorBoundary>} />
                 <Route path="/create" element={<ProtectedRoute><ErrorBoundary><CreateToken /></ErrorBoundary></ProtectedRoute>} />
