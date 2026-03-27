@@ -1,5 +1,6 @@
 import React from 'react'
 import { ToastContainer, Button, Spinner } from './components/UI';
+import { OnboardingModal } from './components/UI/OnboardingModal';
 import './App.css'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -118,7 +119,7 @@ function AppContent() {
               </div>
             </div>
 
-            <NavBar />
+            <NavBar onHelpClick={() => setShowOnboarding(true)} />
           </div>
         </header>
 

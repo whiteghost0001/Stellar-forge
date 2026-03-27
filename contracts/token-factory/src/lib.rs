@@ -424,6 +424,25 @@ impl TokenFactory {
         Ok(())
     }
 
+    /// Upgrade the contract WASM to a new hash. Only the admin can call this.
+    /// Contract state is preserved; call `migrate()` afterwards if state layout changes.
+    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
+        admin.require_auth();
+        let state = Self::load_state(&env);
+        if state.admin != admin {
+            return Err(Error::Unauthorized);
+        }
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+        Ok(())
+    }
+
+    /// Stub for future state migrations after an upgrade.
+    /// Extend this function when a WASM upgrade requires data layout changes.
+    pub fn migrate(_env: Env, _admin: Address) -> Result<(), Error> {
+        // No-op until a migration is required.
+        Ok(())
+    }
+
     pub fn transfer_admin(env: Env, admin: Address, new_admin: Address) -> Result<(), Error> {
         admin.require_auth();
         let mut state = Self::load_state(&env);
