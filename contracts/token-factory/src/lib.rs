@@ -157,6 +157,16 @@ impl TokenFactory {
         fee_payment: i128,
         state: &mut FactoryState,
     ) -> Result<Address, Error> {
+        // Validate token name: non-empty and at most 32 characters
+        if name.len() == 0 || name.len() > 32 {
+            return Err(Error::InvalidTokenParams);
+        }
+
+        // Validate token symbol: non-empty and at most 12 characters
+        if symbol.len() == 0 || symbol.len() > 12 {
+            return Err(Error::InvalidTokenParams);
+        }
+
         if fee_payment < state.base_fee {
             return Err(Error::InsufficientFee);
         }
