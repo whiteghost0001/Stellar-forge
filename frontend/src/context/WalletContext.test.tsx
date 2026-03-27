@@ -8,6 +8,8 @@ vi.mock('../services/wallet', () => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
     isInstalled: vi.fn().mockReturnValue(true),
+    checkExistingConnection: vi.fn().mockResolvedValue(null),
+    getBalance: vi.fn().mockResolvedValue('100.0000000'),
   },
 }))
 

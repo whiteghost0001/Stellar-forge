@@ -1,29 +1,21 @@
 ## Description
+A clear summary of what this PR does and why.
 
-Please include a summary of the changes and the "Why" behind them.
-
-## Related Issue
-
-Link the issue using "Closes #XX" or "Fixes #XX".
+Closes #<!-- issue number -->
 
 ## Type of Change
-
-Please tick the relevant options:
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor / code cleanup
 - [ ] Documentation update
+- [ ] Other (describe):
 
-## Testing Done
-
-Please describe the tests you ran (unit tests, manual verification, etc.) to verify your changes.
+## Testing Notes
+Describe how you tested your changes. Include steps to reproduce or verify.
 
 ## Checklist
-
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or my feature works
-- [ ] New and existing unit tests pass locally with my changes
+- [ ] My code follows the project's style guidelines
+- [ ] I have performed a self-review of my code
+- [ ] I have added or updated relevant documentation
+- [ ] My changes do not introduce new warnings or errors
+- [ ] I have tested this on the relevant platforms/environments

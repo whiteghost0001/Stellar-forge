@@ -1,32 +1,59 @@
+import React from 'react'
+import { ToastContainer, Button, Spinner } from './components/UI';
+import { OnboardingModal } from './components/UI/OnboardingModal';
 import './App.css'
+import { useTranslation } from 'react-i18next'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { WalletProvider } from './context/WalletContext'
 import { ToastProvider, useToast } from './context/ToastContext'
 import { NetworkProvider } from './context/NetworkContext'
-import { ToastContainer } from './components/UI/ToastContainer'
+import { StellarProvider } from './context/StellarContext'
 import { NetworkSwitcher } from './components/NetworkSwitcher'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { FundbotButton } from './components/FundbotButton'
 import { useWallet } from './hooks/useWallet'
-import { Button } from './components/UI/Button'
-import { Spinner } from './components/UI/Spinner'
 import { truncateAddress, formatXLM } from './utils/formatting'
+import { NavBar } from './components/NavBar'
+import { Home } from './components/Home'
+import { CreateToken } from './components/CreateToken'
+import { MintForm } from './components/MintForm'
+import { BurnForm } from './components/BurnForm'
+import { Dashboard } from './components/Dashboard'
+import { TokenDetail } from './components/TokenDetail'
+import { isFactoryConfigured } from './config/env'
+import ErrorBoundary from './components/ErrorBoundary'
+import { TosProvider } from './context/TosContext'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+
+const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { wallet } = useWallet()
+  if (!wallet.isConnected) return <Navigate to="/" replace />
+  return children
+}
 
 function AppContent() {
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
   const { addToast } = useToast()
+  const { t } = useTranslation()
+  const [showFriendbotBanner, setShowBanner] = React.useState(
+    () => !!(wallet.isConnected && wallet.balance && parseFloat(wallet.balance) < 1)
+  )
 
-  const handleGetStarted = () => addToast("Welcome! Let's deploy your token.", 'info')
+  const handleGetStarted = () => addToast(t('home.welcomeToast'), 'info')
 
   const handleConnect = async () => {
     try {
       await connect()
-      if (!error) addToast('Wallet connected', 'success')
+      if (!error) addToast(t('wallet.connected'), 'success')
     } catch {
-      addToast('Failed to connect wallet', 'error')
+      addToast(t('wallet.connectFailed'), 'error')
     }
   }
 
   const handleDisconnect = () => {
     disconnect()
-    addToast('Wallet disconnected', 'info')
+    addToast(t('wallet.disconnected'), 'info')
   }
 
   return (
@@ -35,19 +62,20 @@ function AppContent() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded"
       >
-        Skip to main content
+        {t('app.skipToMain')}
       </a>
 
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow" role="banner">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">StellarForge</h1>
-                <p className="mt-2 text-sm text-gray-600">Stellar Token Deployer</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('app.title')}</h1>
+                <p className="mt-2 text-sm text-gray-600">{t('app.subtitle')}</p>
               </div>
 
               <div className="flex items-center gap-4">
+                <LanguageSwitcher />
                 <NetworkSwitcher />
 
                 {!isInstalled && (
@@ -57,12 +85,13 @@ function AppContent() {
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:text-blue-800 underline"
                   >
-                    Install Freighter
+                    {t('wallet.installFreighter')}
                   </a>
                 )}
 
                 {wallet.isConnected ? (
                   <div className="flex items-center gap-3">
+                    <FundbotButton />
                     <div className="text-right">
                       <div className="text-sm font-medium text-gray-900">
                         {wallet.address && truncateAddress(wallet.address)}
@@ -72,7 +101,7 @@ function AppContent() {
                       )}
                     </div>
                     <Button onClick={handleDisconnect} variant="secondary" size="sm">
-                      Disconnect
+                      {t('wallet.disconnect')}
                     </Button>
                   </div>
                 ) : (
@@ -80,17 +109,27 @@ function AppContent() {
                     {isConnecting ? (
                       <span className="flex items-center gap-2">
                         <Spinner size="sm" />
-                        Connecting...
+                        {t('wallet.connecting')}
                       </span>
                     ) : (
-                      'Connect Wallet'
+                      t('wallet.connect')
                     )}
                   </Button>
                 )}
               </div>
             </div>
+
+            <NavBar onHelpClick={() => setShowOnboarding(true)} />
           </div>
         </header>
+
+        {!isFactoryConfigured() && (
+          <div className="bg-yellow-50 border-b border-yellow-300 p-4" role="alert">
+            <div className="max-w-7xl mx-auto text-yellow-800 text-sm font-medium">
+              ⚠️ Factory contract not configured. Please set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_FACTORY_CONTRACT_ID</code> in your <code className="font-mono bg-yellow-100 px-1 rounded">.env</code> file.
+            </div>
+          </div>
+        )}
 
         <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
@@ -99,27 +138,23 @@ function AppContent() {
                 className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg"
                 role="alert"
               >
-                <p className="font-medium">Error</p>
+                <p className="font-medium">{t('errors.title')}</p>
                 <p className="text-sm">{error}</p>
               </div>
             )}
 
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  Welcome to Nova Launch
-                </h2>
-                <p className="text-gray-600 mb-8">
-                  Deploy your custom tokens on Stellar blockchain
-                </p>
-                <button
-                  onClick={handleGetStarted}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Get Started
-                </button>
-              </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <Routes>
+                <Route path="/" element={<ErrorBoundary><Home onGetStarted={handleGetStarted} /></ErrorBoundary>} />
+                <Route path="/create" element={<ProtectedRoute><ErrorBoundary><CreateToken /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/mint" element={<ProtectedRoute><ErrorBoundary><MintForm /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/burn" element={<ProtectedRoute><ErrorBoundary><BurnForm /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/tokens" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/tokens/:address" element={<ProtectedRoute><ErrorBoundary><TokenDetail /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </div>
+            <Dashboard />
           </div>
         </main>
 
@@ -131,13 +166,21 @@ function AppContent() {
 
 function App() {
   return (
-    <NetworkProvider>
-      <WalletProvider>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </WalletProvider>
-    </NetworkProvider>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <NetworkProvider>
+          <StellarProvider>
+            <WalletProvider>
+              <ToastProvider>
+                <TosProvider>
+                  <AppContent />
+                </TosProvider>
+              </ToastProvider>
+            </WalletProvider>
+          </StellarProvider>
+        </NetworkProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

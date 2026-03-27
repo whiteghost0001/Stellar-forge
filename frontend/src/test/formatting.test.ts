@@ -1,5 +1,108 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatTimestamp, timeAgo } from '../utils/formatting'
+import {
+  formatTimestamp,
+  timeAgo,
+  formatXLM,
+  truncateAddress,
+  stroopsToXLM,
+  xlmToStroops,
+  stellarExplorerUrl,
+  ipfsToGatewayUrl,
+} from '../utils/formatting'
+
+describe('ipfsToGatewayUrl', () => {
+  it('converts CIDv0 ipfs URI to pinata gateway URL', () => {
+    expect(ipfsToGatewayUrl('ipfs://QmXxx'))
+      .toBe('https://gateway.pinata.cloud/ipfs/QmXxx')
+  })
+
+  it('converts CIDv1 ipfs URI to pinata gateway URL', () => {
+    expect(ipfsToGatewayUrl('ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'))
+      .toBe('https://gateway.pinata.cloud/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi')
+  })
+
+  it('returns non-IPFS URIs unchanged', () => {
+    expect(ipfsToGatewayUrl('https://example.com/metadata.json'))
+      .toBe('https://example.com/metadata.json')
+  })
+})
+
+describe('stellarExplorerUrl', () => {
+  it('builds a testnet tx link', () => {
+    expect(stellarExplorerUrl('tx', 'abc123', 'testnet'))
+      .toBe('https://stellar.expert/explorer/testnet/tx/abc123')
+  })
+
+  it('builds a mainnet tx link', () => {
+    expect(stellarExplorerUrl('tx', 'abc123', 'mainnet'))
+      .toBe('https://stellar.expert/explorer/public/tx/abc123')
+  })
+
+  it('builds a contract link', () => {
+    expect(stellarExplorerUrl('contract', 'CABC', 'testnet'))
+      .toBe('https://stellar.expert/explorer/testnet/contract/CABC')
+  })
+
+  it('builds an account link', () => {
+    expect(stellarExplorerUrl('account', 'GABC', 'mainnet'))
+      .toBe('https://stellar.expert/explorer/public/account/GABC')
+  })
+
+  it('defaults to testnet', () => {
+    expect(stellarExplorerUrl('tx', 'xyz')).toContain('testnet')
+  })
+})
+
+
+describe('formatXLM', () => {
+  it('formats a number to 7 decimal places with XLM suffix', () => {
+    expect(formatXLM(1)).toBe('1.0000000 XLM')
+  })
+
+  it('handles a string input', () => {
+    expect(formatXLM('2.5')).toBe('2.5000000 XLM')
+  })
+
+  it('handles zero', () => {
+    expect(formatXLM(0)).toBe('0.0000000 XLM')
+  })
+})
+
+describe('truncateAddress', () => {
+  it('truncates a long address with defaults', () => {
+    // 58-char string: 6 start + '...' + 4 end = 'GABCDE...WXYZ'
+    const addr = 'GABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    expect(truncateAddress(addr)).toBe('GABCDE...WXYZ')
+  })
+
+  it('returns the address unchanged if short enough', () => {
+    expect(truncateAddress('GABCD', 6, 4)).toBe('GABCD')
+  })
+
+  it('respects custom startChars and endChars', () => {
+    expect(truncateAddress('GABCDEFGHIJ', 3, 3)).toBe('GAB...HIJ')
+  })
+})
+
+describe('stroopsToXLM', () => {
+  it('converts 10000000 stroops to 1 XLM', () => {
+    expect(stroopsToXLM(10000000)).toBe(1)
+  })
+
+  it('handles string input', () => {
+    expect(stroopsToXLM('5000000')).toBe(0.5)
+  })
+})
+
+describe('xlmToStroops', () => {
+  it('converts 1 XLM to 10000000 stroops', () => {
+    expect(xlmToStroops(1)).toBe(10000000)
+  })
+
+  it('floors fractional stroops', () => {
+    expect(xlmToStroops('0.00000001')).toBe(0)
+  })
+})
 
 describe('formatTimestamp', () => {
   it('formats a known timestamp correctly', () => {

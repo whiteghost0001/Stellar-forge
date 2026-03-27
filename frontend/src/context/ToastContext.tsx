@@ -37,6 +37,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useToast = (): ToastContextValue => {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error('useToast must be used within a ToastProvider')

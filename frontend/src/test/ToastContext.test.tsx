@@ -59,7 +59,7 @@ describe('useToast', () => {
   it('manually removes a toast', () => {
     const { result } = renderHook(() => useToast(), { wrapper })
     act(() => { result.current.addToast('remove me') })
-    const id = result.current.toasts[0].id
+    const id = result.current.toasts[0]!.id
     act(() => { result.current.removeToast(id) })
     expect(result.current.toasts).toHaveLength(0)
   })
@@ -70,9 +70,9 @@ describe('useToast', () => {
       result.current.addToast('keep')
       result.current.addToast('remove')
     })
-    const removeId = result.current.toasts[1].id
+    const removeId = result.current.toasts[1]!.id
     act(() => { result.current.removeToast(removeId) })
     expect(result.current.toasts).toHaveLength(1)
-    expect(result.current.toasts[0].message).toBe('keep')
+    expect(result.current.toasts[0]!.message).toBe('keep')
   })
 })

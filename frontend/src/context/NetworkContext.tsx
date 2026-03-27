@@ -46,6 +46,7 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNetwork(): NetworkContextValue {
   const ctx = useContext(NetworkContext)
   if (!ctx) throw new Error('useNetwork must be used within a NetworkProvider')

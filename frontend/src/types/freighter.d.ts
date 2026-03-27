@@ -124,6 +124,6 @@ declare module '@stellar/freighter-api' {
 // Extend Window interface to include Freighter
 declare global {
   interface Window {
-    freighter?: any
+    freighter?: unknown
   }
 }

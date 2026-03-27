@@ -1,8 +1,12 @@
 // Validation utilities
+import { StrKey } from 'stellar-sdk'
 
 export const isValidStellarAddress = (address: string): boolean => {
-  // Basic validation for Stellar address
-  return address.length === 56 && address.startsWith('G')
+  return StrKey.isValidEd25519PublicKey(address)
+}
+
+export const isValidContractAddress = (address: string): boolean => {
+  return StrKey.isValidContract(address)
 }
 
 export const validateTokenParams = (params: {
