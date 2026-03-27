@@ -865,46 +865,9 @@ cargo build --target wasm32-unknown-unknown
 - Check that you're on the correct network (testnet/mainnet)
 - Clear browser cache and reload
 
-## Code of Conduct
-
-We are committed to providing a welcoming and inclusive environment. Please be respectful and constructive in all interactions.
-
 ## License
 
-## Adding a New Language (i18n)
-
-StellarForge uses [react-i18next](https://react.i18next.com/) for internationalization. All UI strings live in `frontend/src/i18n/en.json`.
-
-### Steps to add a new language
-
-1. Copy `frontend/src/i18n/en.json` to a new file named after the [BCP 47 language tag](https://en.wikipedia.org/wiki/IETF_language_tag), e.g. `es.json` for Spanish.
-
-2. Translate all values in the new file (keep the keys unchanged).
-
-3. Register the new language in `frontend/src/i18n/index.ts`:
-   ```ts
-   import es from './es.json'
-
-   i18n.use(initReactI18next).init({
-     resources: {
-       en: { translation: en },
-       es: { translation: es },   // add this line
-     },
-     ...
-   })
-   ```
-
-4. Add the language option to `frontend/src/components/LanguageSwitcher.tsx`:
-   ```ts
-   const LANGUAGES = [
-     { code: 'en', label: 'English' },
-     { code: 'es', label: 'Español' },  // add this line
-   ]
-   ```
-
-That's it — no other code changes are needed.
-
-## Questions?
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ---
 

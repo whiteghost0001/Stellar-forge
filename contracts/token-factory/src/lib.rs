@@ -60,7 +60,8 @@ pub enum Error {
     /// re-entered before the first invocation completes, the second call is
     /// rejected immediately rather than corrupting factory state.
     Reentrancy = 11,
-    InvalidTokenParams = 12,
+    /// Integer overflow error during arithmetic operations (fee calculation, token count, etc.)
+    ArithmeticOverflow = 12,
 }
 
 #[contract]
@@ -196,7 +197,10 @@ impl TokenFactory {
             token::StellarAssetClient::new(env, &token_address).mint(&creator, &initial_supply);
         }
 
-        state.token_count += 1;
+        // Increment token_count with overflow check
+        let new_count = state.token_count.checked_add(1)
+            .ok_or(Error::ArithmeticOverflow)?;
+        state.token_count = new_count;
         let index = state.token_count;
 
         env.storage().instance().set(&index, &TokenInfo {
@@ -290,6 +294,11 @@ impl TokenFactory {
     ) -> Result<(), Error> {
         Self::require_not_paused(&env)?;
         admin.require_auth();
+
+        // Validate mint amount is positive and doesn't overflow
+        if amount <= 0 {
+            return Err(Error::InvalidParameters);
+        }
 
         let state = Self::load_state(&env);
 
