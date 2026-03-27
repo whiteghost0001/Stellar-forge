@@ -17,6 +17,7 @@ import { Dashboard } from './components/Dashboard'
 import { TokenDetail } from './components/TokenDetail'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
+import { TosProvider } from './context/TosContext'
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { wallet } = useWallet()
@@ -186,7 +187,9 @@ function App() {
         <StellarProvider>
           <WalletProvider>
             <ToastProvider>
-              <AppContent />
+              <TosProvider>
+                <AppContent />
+              </TosProvider>
             </ToastProvider>
           </WalletProvider>
         </StellarProvider>

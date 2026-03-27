@@ -4,6 +4,7 @@ import { Input } from './UI/Input'
 import { useDebounce } from '../hooks/useDebounce'
 import { useTokenBalance } from '../hooks/useTokenBalance'
 import { useWalletContext } from '../context/WalletContext'
+import { useTos } from '../context/TosContext'
 import { stellarService } from '../services/stellar'
 import type { TokenInfo } from '../types'
 
@@ -15,6 +16,7 @@ export const BurnForm: React.FC = () => {
   const [pending, setPending] = useState(false)
 
   const { wallet } = useWalletContext()
+  const { requireTos } = useTos()
   const debouncedAddress = useDebounce(tokenAddress, 300)
 
   const { balance, refresh: refreshBalance } = useTokenBalance(
@@ -33,7 +35,7 @@ export const BurnForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (amountExceedsBalance) return
-    setPending(true)
+    requireTos(() => setPending(true))
   }
 
   const handleConfirm = () => {

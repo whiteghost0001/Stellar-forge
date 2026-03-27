@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Input, Button, ConfirmModal } from './UI'
 import { useDebounce } from '../hooks/useDebounce'
+import { useTos } from '../context/TosContext'
 import { stellarService } from '../services/stellar'
 import type { TokenInfo } from '../types'
 
@@ -17,6 +18,7 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
   const [amount, setAmount] = useState('')
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [pending, setPending] = useState(false)
+  const { requireTos } = useTos()
 
   const debouncedAddress = useDebounce(tokenAddress, 300)
 
@@ -27,7 +29,7 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setPending(true)
+    requireTos(() => setPending(true))
   }
 
   const handleConfirm = async () => {
