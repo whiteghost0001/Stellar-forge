@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { walletService } from '../services/wallet'
+import { useNetwork } from './NetworkContext'
 
 interface WalletState {
   address: string | null
@@ -14,11 +15,13 @@ interface WalletContextValue {
   isInstalled: boolean
   connect: () => Promise<void>
   disconnect: () => void
+  refreshBalance: () => Promise<void>
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const { network } = useNetwork()
   const [wallet, setWallet] = useState<WalletState>({
     address: null,
     isConnected: false,
@@ -26,11 +29,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   })
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isInstalled, setIsInstalled] = useState<boolean>(true) // Assume installed initially
 
   const fetchBalance = async (address: string) => {
     try {
-      const balance = await walletService.getBalance(address)
-      setWallet((prev) => ({ ...prev, balance }))
+      const balance = await walletService.getBalance(address, network)
+      setWallet((prev: WalletState) => ({ ...prev, balance }))
     } catch (err) {
       console.error('Failed to fetch balance:', err)
     }
@@ -58,8 +62,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    const checkConnection = async () => {
-      if (!walletService.isInstalled()) {
+    const initWallet = async () => {
+      const installed = await walletService.isInstalled()
+      setIsInstalled(installed)
+
+      if (!installed) {
         return
       }
 
@@ -74,8 +81,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    checkConnection()
+    initWallet()
   }, [])
+
+  // Refresh balance when network changes
+  useEffect(() => {
+    if (wallet.isConnected && wallet.address) {
+      fetchBalance(wallet.address)
+    }
+  }, [network])
 
   return (
     <WalletContext.Provider
@@ -83,9 +97,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         wallet,
         isConnecting,
         error,
-        isInstalled: walletService.isInstalled(),
+        isInstalled,
         connect,
         disconnect,
+        refreshBalance: () => (wallet.address ? fetchBalance(wallet.address) : Promise.resolve()),
       }}
     >
       {children}

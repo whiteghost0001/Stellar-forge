@@ -72,8 +72,8 @@ import {
   validateDecimals,
 } from '../utils/validation'
 
-// A real valid Ed25519 public key (Stellar foundation account)
-const VALID_ACCOUNT = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN'
+// A real valid Ed25519 public key (generated via Keypair.random())
+const VALID_ACCOUNT = 'GDNQ2ULB7MXLA4GJBTAAZQON3IEO4HUCYFQMAHVAA2RTC4L4B4G5IK4C'
 // Same address with last char flipped — valid format, invalid checksum
 const INVALID_CHECKSUM_ACCOUNT = VALID_ACCOUNT.slice(0, 55) + (VALID_ACCOUNT[55] === 'N' ? 'M' : 'N')
 // A real valid contract address (C...)

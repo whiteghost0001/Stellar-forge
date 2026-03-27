@@ -1,5 +1,6 @@
 import React from 'react'
 import { ToastContainer, Button, Spinner } from './components/UI';
+import { OnboardingModal } from './components/UI/OnboardingModal';
 import './App.css'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -9,6 +10,7 @@ import { NetworkProvider } from './context/NetworkContext'
 import { StellarProvider } from './context/StellarContext'
 import { NetworkSwitcher } from './components/NetworkSwitcher'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { FundbotButton } from './components/FundbotButton'
 import { useWallet } from './hooks/useWallet'
 import { truncateAddress, formatXLM } from './utils/formatting'
 import { NavBar } from './components/NavBar'
@@ -21,6 +23,8 @@ import { TokenDetail } from './components/TokenDetail'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState } from 'react'
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { wallet } = useWallet()
@@ -87,63 +91,54 @@ function AppContent() {
 
                 {wallet.isConnected ? (
                   <div className="flex items-center gap-3">
+                    <FundbotButton />
                     <div className="text-right">
                       <div className="text-sm font-medium text-gray-900">
                         {wallet.address && truncateAddress(wallet.address)}
                       </div>
-                      {wallet.balance && (
-                        <div className="text-xs text-gray-600">{formatXLM(wallet.balance)}</div>
-                      )}
+                      <Button onClick={handleDisconnect} variant="secondary" size="sm">
+                        {t('wallet.disconnect')}
+                      </Button>
                     </div>
-                    <Button onClick={handleDisconnect} variant="secondary" size="sm">
-                      {t('wallet.disconnect')}
+                  ) : (
+                    <Button onClick={handleConnect} disabled={isConnecting} size="sm">
+                      {isConnecting ? (
+                        <span className="flex items-center gap-2">
+                          <Spinner size="sm" />
+                          <span className="hidden sm:inline">{t('wallet.connecting')}</span>
+                        </span>
+                      ) : (
+                        t('wallet.connect')
+                      )}
                     </Button>
-                  </div>
-                ) : (
-                  <Button onClick={handleConnect} disabled={isConnecting} size="sm">
-                    {isConnecting ? (
-                      <span className="flex items-center gap-2">
-                        <Spinner size="sm" />
-                        {t('wallet.connecting')}
-                      </span>
-                    ) : (
-                      t('wallet.connect')
-                    )}
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
 
-            <NavBar />
-          </div>
-        </header>
+              {/* Wallet address on mobile when connected */}
+              {wallet.isConnected && wallet.address && (
+                <div className="sm:hidden text-xs text-gray-600 truncate">
+                  {truncateAddress(wallet.address)}
+                  {wallet.balance && <span className="ml-2">{formatXLM(wallet.balance)}</span>}
+                </div>
+              )}
 
-        {showFriendbotBanner && (
-          <div className="bg-blue-50 border-b border-blue-200 p-4">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="text-blue-800 text-sm">
-                Your testnet balance is low. Get free testnet XLM from{' '}
+              {/* Install Freighter link on mobile */}
+              {!isInstalled && (
                 <a
-                  href={`https://friendbot.stellar.org/?addr=${wallet.address}`}
+                  href="https://www.freighter.app/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold underline"
+                  className="sm:hidden text-xs text-blue-600 hover:text-blue-800 underline"
                 >
-                  Friendbot
-                </a>.
-              </div>
-              <button
-                onClick={() => setShowBanner(false)}
-                className="text-blue-600 hover:text-blue-800 focus:outline-none ml-4"
-                aria-label="Dismiss banner"
-              >
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
+                  {t('wallet.installFreighter')}
+                </a>
+              )}
             </div>
+
+            <NavBar onHelpClick={() => setShowOnboarding(true)} />
           </div>
-        )}
+        </header>
 
         {!isFactoryConfigured() && (
           <div className="bg-yellow-50 border-b border-yellow-300 p-4" role="alert">
@@ -153,8 +148,8 @@ function AppContent() {
           </div>
         )}
 
-        <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
+        <main id="main-content" className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+          <div className="py-2 sm:py-4">
             {error && (
               <div
                 className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg"
@@ -165,7 +160,7 @@ function AppContent() {
               </div>
             )}
 
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <Routes>
                 <Route path="/" element={<ErrorBoundary><Home onGetStarted={handleGetStarted} /></ErrorBoundary>} />
                 <Route path="/create" element={<ProtectedRoute><ErrorBoundary><CreateToken /></ErrorBoundary></ProtectedRoute>} />

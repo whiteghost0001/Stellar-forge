@@ -21,7 +21,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="tos-modal-title"
@@ -69,7 +69,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
               className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-800 dark:text-gray-200">
-              I have read and agree to the Terms of Service and understand the risks involved.
+              I understand the risks and accept the Terms of Service.
             </span>
           </label>
         </div>
@@ -85,7 +85,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
             Read full terms document
           </a>
           <Button onClick={onAccept} disabled={!checked}>
-            Accept &amp; Proceed
+            Accept
           </Button>
         </div>
       </div>

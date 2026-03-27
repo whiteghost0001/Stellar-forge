@@ -101,6 +101,19 @@ cd contracts/token-factory
 cargo test
 ```
 
+### Run Contract Fuzz Tests
+
+Fuzz testing with random inputs discovers edge cases and potential crashes:
+
+```bash
+cd contracts/token-factory/fuzz
+cargo fuzz run fuzz_create_token -- -timeout=60    # Test token creation
+cargo fuzz run fuzz_fee_arithmetic -- -timeout=60  # Test fee calculations
+cargo fuzz run fuzz_burn -- -timeout=60            # Test burn operations
+```
+
+For more details on fuzz testing setup and interpretation, see [contracts/token-factory/fuzz/README.md](contracts/token-factory/fuzz/README.md).
+
 ### Frontend
 ```bash
 cd frontend
@@ -287,6 +300,52 @@ The fee source must have enough XLM to cover the base fee. The inner transaction
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup and contribution guidelines.
+
+## Architecture Decision Records
+
+Key architectural decisions are documented in [`docs/adr/`](./docs/adr/):
+
+- [ADR-001: Choice of Stellar / Soroban for smart contracts](./docs/adr/ADR-001-stellar-soroban.md)
+- [ADR-002: Freighter wallet integration](./docs/adr/ADR-002-freighter-wallet.md)
+- [ADR-003: Pinata for IPFS metadata storage](./docs/adr/ADR-003-pinata-ipfs.md)
+- [ADR-004: React + Vite + TypeScript for frontend](./docs/adr/ADR-004-react-vite-typescript.md)
+
+## Contract Upgrade Process
+
+The factory contract supports in-place WASM upgrades without redeploying or migrating state.
+
+### How it works
+
+1. Build and optimize the new contract WASM.
+2. Upload the new WASM to the network to obtain its hash:
+   ```bash
+   stellar contract upload \
+     --wasm target/wasm32-unknown-unknown/release/token_factory.optimized.wasm \
+     --source <admin-secret-key> \
+     --network testnet
+   # Outputs: <new-wasm-hash>
+   ```
+3. Call `upgrade` on the deployed contract:
+   ```bash
+   stellar contract invoke \
+     --id <contract-id> \
+     --source <admin-secret-key> \
+     --network testnet \
+     -- upgrade \
+     --admin <admin-address> \
+     --new_wasm_hash <new-wasm-hash>
+   ```
+4. If the new version requires data layout changes, call `migrate` immediately after:
+   ```bash
+   stellar contract invoke \
+     --id <contract-id> \
+     --source <admin-secret-key> \
+     --network testnet \
+     -- migrate \
+     --admin <admin-address>
+   ```
+
+Only the admin address can call `upgrade`. Non-admin callers receive `Error::Unauthorized`. Contract state (tokens, fees, admin) is fully preserved across upgrades.
 
 ## Code of Conduct
 

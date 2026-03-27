@@ -1,10 +1,9 @@
 import {
   isConnected,
   getAddress,
-  requestAccess,
   signTransaction as freighterSignTransaction,
 } from '@stellar/freighter-api'
-import { STELLAR_CONFIG } from '../config/stellar'
+import { STELLAR_CONFIG, NETWORK_CONFIGS } from '../config/stellar'
 
 interface HorizonBalance {
   asset_type: string
@@ -20,33 +19,39 @@ const FREIGHTER_INSTALL_URL = 'https://www.freighter.app/'
 export class WalletService {
   private connectedAddress: string | null = null
 
-  isInstalled(): boolean {
-    return typeof window !== 'undefined'
+  async isInstalled(): Promise<boolean> {
+    try {
+      const result = await isConnected();
+      return !!result.isConnected;
+    } catch {
+      return false;
+    }
   }
 
   async connect(): Promise<string> {
-    if (!this.isInstalled()) {
+    if (!(await this.isInstalled())) {
       throw new Error(
         `Freighter wallet is not installed. Please install it from ${FREIGHTER_INSTALL_URL}`
       )
     }
 
     try {
-      // Request access to the wallet
-      const accessObj = await requestAccess()
+      // Use getAddress as it's the more modern version in @stellar/freighter-api
+      // but fulfills the role of getPublicKey()
+      const addressObj = await getAddress()
 
-      if (accessObj.error) {
-        throw new Error(accessObj.error)
+      if (addressObj.error) {
+        throw new Error(addressObj.error)
       }
 
-      if (!accessObj.address) {
+      if (!addressObj.address) {
         throw new Error(
           `Freighter wallet is not available. Please install or unlock it from ${FREIGHTER_INSTALL_URL}`
         )
       }
 
-      this.connectedAddress = accessObj.address
-      return accessObj.address
+      this.connectedAddress = addressObj.address
+      return addressObj.address
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to connect to Freighter: ${error.message}`)
@@ -59,8 +64,8 @@ export class WalletService {
     this.connectedAddress = null
   }
 
-  async signTransaction(xdr: string): Promise<string> {
-    if (!this.isInstalled()) {
+  async signTransaction(xdr: string, network: 'testnet' | 'mainnet'): Promise<string> {
+    if (!(await this.isInstalled())) {
       throw new Error('Freighter wallet is not installed')
     }
 
@@ -69,8 +74,7 @@ export class WalletService {
     }
 
     try {
-      const network = this.getActiveNetwork()
-      const networkPassphrase = STELLAR_CONFIG[network].networkPassphrase
+      const networkPassphrase = NETWORK_CONFIGS[network].networkPassphrase
 
       const signedResult = await freighterSignTransaction(xdr, {
         networkPassphrase,
@@ -87,7 +91,7 @@ export class WalletService {
         // Check for network mismatch
         if (error.message.includes('network')) {
           throw new Error(
-            `Network mismatch: Please switch Freighter to ${STELLAR_CONFIG.network}`
+            `Network mismatch: Please switch Freighter to ${network}`
           )
         }
         throw new Error(`Failed to sign transaction: ${error.message}`)
@@ -96,10 +100,9 @@ export class WalletService {
     }
   }
 
-  async getBalance(address: string): Promise<string> {
+  async getBalance(address: string, network: 'testnet' | 'mainnet'): Promise<string> {
     try {
-      const network = this.getActiveNetwork()
-      const horizonUrl = STELLAR_CONFIG[network].horizonUrl
+      const horizonUrl = NETWORK_CONFIGS[network].horizonUrl
 
       const response = await fetch(`${horizonUrl}/accounts/${address}`)
 

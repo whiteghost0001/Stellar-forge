@@ -9,3 +9,5 @@ export { Select } from './Select';
 export { Spinner } from './Spinner';
 export { TermsModal } from './TermsModal';
 export { ToastContainer } from './ToastContainer';
+export { QRCodeModal } from './QRCodeModal';
+export { OnboardingModal, ONBOARDING_STORAGE_KEY } from './OnboardingModal';

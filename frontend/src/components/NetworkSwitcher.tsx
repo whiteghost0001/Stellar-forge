@@ -8,6 +8,11 @@ const BADGE_COLORS: Record<Network, string> = {
   mainnet: 'bg-green-100 text-green-800 border-green-300',
 }
 
+const LABELS: Record<Network, string> = {
+  testnet: 'Testnet',
+  mainnet: 'Mainnet',
+}
+
 export const NetworkSwitcher: React.FC = () => {
   const { t } = useTranslation()
   const { network, switchNetwork } = useNetwork()
@@ -48,6 +53,7 @@ export const NetworkSwitcher: React.FC = () => {
           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer select-none transition-colors ${BADGE_COLORS[network]}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${network === 'mainnet' ? 'bg-green-500' : 'bg-yellow-500'}`} aria-hidden="true" />
+          {network === 'testnet' && <span className="inline-block">🧪</span>}
           {networkLabel(network)}
           <svg className="h-3 w-3 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
