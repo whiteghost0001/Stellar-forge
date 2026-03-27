@@ -64,7 +64,7 @@ export class WalletService {
     this.connectedAddress = null
   }
 
-  async signTransaction(xdr: string): Promise<string> {
+  async signTransaction(xdr: string, network: 'testnet' | 'mainnet'): Promise<string> {
     if (!(await this.isInstalled())) {
       throw new Error('Freighter wallet is not installed')
     }

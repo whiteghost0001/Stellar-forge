@@ -1,5 +1,5 @@
 import { useWalletContext } from '../context/WalletContext'
-import { truncateAddress } from '../utils/formatting'
+import { truncateAddress, formatXLM } from '../utils/formatting'
 import { Button } from './UI/Button'
 import { Spinner } from './UI/Spinner'
 
@@ -34,10 +34,21 @@ export const WalletConnectButton: React.FC = () => {
   // Connected state
   if (wallet.isConnected && wallet.address) {
     return (
-      <div className="inline-flex items-center gap-2">
-        <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
-          {truncateAddress(wallet.address)}
-        </span>
+      <div className="inline-flex items-center gap-3">
+        <div className="flex flex-col items-end">
+          <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
+            {truncateAddress(wallet.address)}
+          </span>
+          {wallet.balance !== undefined ? (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formatXLM(wallet.balance)}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              Loading balance...
+            </span>
+          )}
+        </div>
         <Button
           onClick={disconnect}
           variant="outline"

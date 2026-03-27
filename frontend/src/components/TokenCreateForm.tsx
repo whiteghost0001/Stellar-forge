@@ -4,15 +4,17 @@ import { Input, Button, MainnetConfirmationModal, ConfirmModal } from './UI'
 import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
 import { useToast } from '../context/ToastContext'
 import { useTos } from '../context/TosContext'
+import { useWalletContext } from '../context/WalletContext'
 import { useStellarContext } from '../context/StellarContext'
 import { TokenDeployParams } from '../types'
 import { STELLAR_CONFIG } from '../config/stellar'
-import { validateTokenSymbol, validateTokenName, validateDecimals } from '../utils/validation'
+import { validateTokenSymbol, validateTokenName, validateDecimals, sanitizeTokenInput } from '../utils/validation'
 
 const ESTIMATED_FEE = '0.01' // XLM
 
 export const TokenCreateForm: React.FC = () => {
   const { stellarService } = useStellarContext()
+  const { refreshBalance } = useWalletContext()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [decimals, setDecimals] = useState('7')
@@ -62,6 +64,8 @@ export const TokenCreateForm: React.FC = () => {
       if (result.success) {
         addToast('Token deployed successfully!', 'success')
         setName(''); setSymbol(''); setDecimals('7'); setInitialSupply(''); setDescription('')
+        // Refresh balance after successful transaction
+        await refreshBalance()
       } else {
         addToast(t('tokenForm.deployFailed'), 'error')
       }

@@ -33,7 +33,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const fetchBalance = async (address: string) => {
     try {
-      const balance = await walletService.getBalance(address)
+      const balance = await walletService.getBalance(address, network)
       setWallet((prev: WalletState) => ({ ...prev, balance }))
     } catch (err) {
       console.error('Failed to fetch balance:', err)
