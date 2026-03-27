@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { ToastContainer, Button, Spinner } from './components/UI';
+import { OnboardingModal } from './components/UI/OnboardingModal';
 import './App.css'
 import { useTranslation } from 'react-i18next'
 import { WalletProvider } from './context/WalletContext'
@@ -29,6 +31,7 @@ function AppContent() {
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
   const { addToast } = useToast()
   const { t } = useTranslation()
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   const handleGetStarted = () => addToast(t('home.welcomeToast'), 'info')
 
@@ -108,9 +111,14 @@ function AppContent() {
               </div>
             </div>
 
-            <NavBar />
+            <NavBar onHelpClick={() => setShowOnboarding(true)} />
           </div>
         </header>
+
+        <OnboardingModal
+          forceOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+        />
 
         {showFriendbotBanner && (
           <div className="bg-blue-50 border-b border-blue-200 p-4">

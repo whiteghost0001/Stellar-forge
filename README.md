@@ -288,6 +288,52 @@ The fee source must have enough XLM to cover the base fee. The inner transaction
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup and contribution guidelines.
 
+## Architecture Decision Records
+
+Key architectural decisions are documented in [`docs/adr/`](./docs/adr/):
+
+- [ADR-001: Choice of Stellar / Soroban for smart contracts](./docs/adr/ADR-001-stellar-soroban.md)
+- [ADR-002: Freighter wallet integration](./docs/adr/ADR-002-freighter-wallet.md)
+- [ADR-003: Pinata for IPFS metadata storage](./docs/adr/ADR-003-pinata-ipfs.md)
+- [ADR-004: React + Vite + TypeScript for frontend](./docs/adr/ADR-004-react-vite-typescript.md)
+
+## Contract Upgrade Process
+
+The factory contract supports in-place WASM upgrades without redeploying or migrating state.
+
+### How it works
+
+1. Build and optimize the new contract WASM.
+2. Upload the new WASM to the network to obtain its hash:
+   ```bash
+   stellar contract upload \
+     --wasm target/wasm32-unknown-unknown/release/token_factory.optimized.wasm \
+     --source <admin-secret-key> \
+     --network testnet
+   # Outputs: <new-wasm-hash>
+   ```
+3. Call `upgrade` on the deployed contract:
+   ```bash
+   stellar contract invoke \
+     --id <contract-id> \
+     --source <admin-secret-key> \
+     --network testnet \
+     -- upgrade \
+     --admin <admin-address> \
+     --new_wasm_hash <new-wasm-hash>
+   ```
+4. If the new version requires data layout changes, call `migrate` immediately after:
+   ```bash
+   stellar contract invoke \
+     --id <contract-id> \
+     --source <admin-secret-key> \
+     --network testnet \
+     -- migrate \
+     --admin <admin-address>
+   ```
+
+Only the admin address can call `upgrade`. Non-admin callers receive `Error::Unauthorized`. Contract state (tokens, fees, admin) is fully preserved across upgrades.
+
 ## Code of Conduct
 
 This project follows the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
