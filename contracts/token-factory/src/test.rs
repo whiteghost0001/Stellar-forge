@@ -615,3 +615,129 @@ fn test_get_tokens_by_creator_empty_for_unknown() {
     let stranger = Address::generate(&s.env);
     assert_eq!(s.client.get_tokens_by_creator(&stranger).len(), 0);
 }
+
+// ── token name and symbol validation ──────────────────────────────────────────
+
+#[test]
+fn test_create_token_rejects_empty_name() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, ""), // empty name
+        &String::from_str(&s.env, "SYM"),
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::InvalidTokenParams)));
+}
+
+#[test]
+fn test_create_token_rejects_empty_symbol() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, "TokenName"),
+        &String::from_str(&s.env, ""), // empty symbol
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::InvalidTokenParams)));
+}
+
+#[test]
+fn test_create_token_accepts_max_length_name() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    // 32 character name (max allowed)
+    let name_32 = "12345678901234567890123456789012";
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, name_32),
+        &String::from_str(&s.env, "SYM"),
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    // Will fail at deploy (dummy hash), but should pass validation
+    assert_ne!(result, Err(Ok(Error::InvalidTokenParams)));
+}
+
+#[test]
+fn test_create_token_rejects_name_over_32_chars() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    // 33 character name (over max)
+    let name_33 = "123456789012345678901234567890123";
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, name_33),
+        &String::from_str(&s.env, "SYM"),
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::InvalidTokenParams)));
+}
+
+#[test]
+fn test_create_token_accepts_max_length_symbol() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    // 12 character symbol (max allowed)
+    let symbol_12 = "ABCDEFGHIJKL";
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, "TokenName"),
+        &String::from_str(&s.env, symbol_12),
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    // Will fail at deploy (dummy hash), but should pass validation
+    assert_ne!(result, Err(Ok(Error::InvalidTokenParams)));
+}
+
+#[test]
+fn test_create_token_rejects_symbol_over_12_chars() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+    s.fund(&creator, 1_000);
+
+    // 13 character symbol (over max)
+    let symbol_13 = "ABCDEFGHIJKLM";
+    let result = s.client.try_create_token(
+        &creator,
+        &s.salt(1),
+        &s.dummy_hash(),
+        &String::from_str(&s.env, "TokenName"),
+        &String::from_str(&s.env, symbol_13),
+        &7,
+        &1_000_000,
+        &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::InvalidTokenParams)));
+}
