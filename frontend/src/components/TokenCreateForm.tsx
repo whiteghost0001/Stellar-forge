@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input, Button, MainnetConfirmationModal, ConfirmModal } from './UI'
 import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
 import { useToast } from '../context/ToastContext'
@@ -24,6 +25,7 @@ export const TokenCreateForm: React.FC = () => {
     useMainnetConfirmation()
   const { addToast } = useToast()
   const { requireTos } = useTos()
+  const { t } = useTranslation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

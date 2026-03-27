@@ -23,6 +23,8 @@ import type {
   TokenInfo,
 } from '../types'
 
+export type { FactoryState } from '../types'
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function hexToBytes(hex: string): Uint8Array {
@@ -53,7 +55,7 @@ function parseContractError(err: unknown): Error {
 
   // Soroban contract errors surface as "Error(Contract, X)" in the result XDR
   const match = msg.match(/Error\(Contract,\s*(\d+)\)/)
-  if (match) {
+  if (match?.[1]) {
     const code = parseInt(match[1], 10)
     return new Error(CONTRACT_ERRORS[code] ?? `Contract error code ${code}`)
   }
@@ -304,7 +306,9 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
   try {
     if (!raw.topic?.length) return null
 
-    const topicVal = xdr.ScVal.fromXDR(raw.topic[0], 'base64')
+    const topic0 = raw.topic[0]
+    if (!topic0) return null
+    const topicVal = xdr.ScVal.fromXDR(topic0, 'base64')
     const eventType = scValToString(topicVal) as ContractEventType
     if (!EVENT_TOPICS.includes(eventType)) return null
 
@@ -612,6 +616,7 @@ export class StellarService {
         decimals: Number(native.decimals ?? 7),
         creator: native.creator?.toString() ?? '',
         createdAt: Number(native.created_at ?? 0),
+        totalSupply: native.total_supply?.toString(),
       }
     } catch (err) {
       throw parseContractError(err)
@@ -668,7 +673,6 @@ export class StellarService {
         totalSupply: '0',
         creator: '',
         createdAt: 0,
-        metadataUri: undefined,
       }
     }
 
@@ -695,7 +699,7 @@ export class StellarService {
       totalSupply: supply.toString(),
       creator: creationEvent?.data.creator ?? '',
       createdAt: creationEvent?.timestamp ?? 0,
-      metadataUri: metadataEvent?.data.metadataUri,
+      ...(metadataEvent?.data.metadataUri ? { metadataUri: metadataEvent.data.metadataUri } : {}),
     }
   }
 
@@ -708,8 +712,10 @@ export class StellarService {
 
     for (const event of events) {
       if (event.type === 'token_created' && event.data.creator === creator) {
+        const tokenAddress = event.data.tokenAddress
+        if (!tokenAddress) continue
         try {
-          const info = await this._getTokenInfoByAddress(event.data.tokenAddress)
+          const info = await this._getTokenInfoByAddress(tokenAddress)
           results.push(info)
         } catch {
           // skip tokens that fail to load

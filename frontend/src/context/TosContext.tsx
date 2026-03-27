@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { TermsModal } from './UI/TermsModal'
+import { TermsModal } from '../components/UI/TermsModal'
 
 const TOS_KEY = 'stellar_forge_tos_accepted'
 

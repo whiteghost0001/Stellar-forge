@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from './UI'
 import { TransactionHistory } from './TransactionHistory'
 import { useClipboard } from '../hooks/useClipboard'
 import { useDebounce } from '../hooks/useDebounce'
 import { useTokens } from '../hooks/useTokens'
 import { STELLAR_CONFIG } from '../config/stellar'
-import { useWallet } from '../hooks/useWallet'
 
 export const TokenDashboard: React.FC = () => {
   const { tokens, isLoading, error } = useTokens()
   const { copied, copy } = useClipboard()
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
 

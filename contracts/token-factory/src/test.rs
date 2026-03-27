@@ -525,6 +525,62 @@ fn test_transfer_admin_same_address_fails() {
     );
 }
 
+// ── reentrancy guard ──────────────────────────────────────────────────────────
+
+#[test]
+fn test_reentrancy_guard_blocks_concurrent_call() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+
+    // Manually set locked = true in factory state to simulate a call already in progress
+    s.env.as_contract(&s.client.address, || {
+        let mut state: FactoryState = s.env.storage().instance()
+            .get(&symbol_short!("state")).unwrap();
+        state.locked = true;
+        s.env.storage().instance().set(&symbol_short!("state"), &state);
+    });
+
+    // A second create_token call while locked should return Reentrancy
+    let result = s.client.try_create_token(
+        &creator, &s.salt(0), &s.dummy_hash(),
+        &String::from_str(&s.env, "T"),
+        &String::from_str(&s.env, "T"),
+        &7, &0, &1_000,
+    );
+    assert_eq!(result, Err(Ok(Error::Reentrancy)));
+}
+
+#[test]
+fn test_reentrancy_guard_released_after_error() {
+    let s = Setup::new();
+    let creator = Address::generate(&s.env);
+
+    // Trigger an error path (insufficient fee) — guard must be released afterwards
+    let _ = s.client.try_create_token(
+        &creator, &s.salt(0), &s.dummy_hash(),
+        &String::from_str(&s.env, "T"),
+        &String::from_str(&s.env, "T"),
+        &7, &0, &1, // fee too low → InsufficientFee
+    );
+
+    // After the failed call, locked must be false
+    s.env.as_contract(&s.client.address, || {
+        let state: FactoryState = s.env.storage().instance()
+            .get(&symbol_short!("state")).unwrap();
+        assert!(!state.locked, "lock should be released after an error");
+    });
+}
+
+#[test]
+fn test_initial_state_is_not_locked() {
+    let s = Setup::new();
+    s.env.as_contract(&s.client.address, || {
+        let state: FactoryState = s.env.storage().instance()
+            .get(&symbol_short!("state")).unwrap();
+        assert!(!state.locked);
+    });
+}
+
 // ── get_tokens_by_creator ─────────────────────────────────────────────────────
 
 #[test]

@@ -1,6 +1,8 @@
+import React from 'react'
 import { ToastContainer, Button, Spinner } from './components/UI';
 import './App.css'
 import { useTranslation } from 'react-i18next'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { WalletProvider } from './context/WalletContext'
 import { ToastProvider, useToast } from './context/ToastContext'
 import { NetworkProvider } from './context/NetworkContext'
@@ -32,7 +34,9 @@ function AppContent() {
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
   const { addToast } = useToast()
   const { t } = useTranslation()
-  const [showFriendbotBanner, setShowBanner] = useState(true)
+  const [showFriendbotBanner, setShowBanner] = React.useState(
+    () => !!(wallet.isConnected && wallet.balance && parseFloat(wallet.balance) < 1)
+  )
 
   const handleGetStarted = () => addToast(t('home.welcomeToast'), 'info')
 
@@ -187,17 +191,19 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <NetworkProvider>
-        <StellarProvider>
-          <WalletProvider>
-            <ToastProvider>
-              <TosProvider>
-                <AppContent />
-              </TosProvider>
-            </ToastProvider>
-          </WalletProvider>
-        </StellarProvider>
-      </NetworkProvider>
+      <BrowserRouter>
+        <NetworkProvider>
+          <StellarProvider>
+            <WalletProvider>
+              <ToastProvider>
+                <TosProvider>
+                  <AppContent />
+                </TosProvider>
+              </ToastProvider>
+            </WalletProvider>
+          </StellarProvider>
+        </NetworkProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   )
 }

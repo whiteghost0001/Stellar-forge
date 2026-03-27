@@ -29,6 +29,9 @@ pub struct TokenInfo {
 pub struct FactoryState {
     pub admin: Address,
     pub paused: bool,
+    /// Reentrancy guard flag. Set to `true` at the start of `create_token`
+    /// and cleared to `false` before returning (success or error).
+    pub locked: bool,
     pub treasury: Address,
     pub fee_token: Address,
     pub base_fee: i128,
@@ -49,6 +52,14 @@ pub enum Error {
     BurnNotEnabled = 8,
     InvalidBurnAmount = 9,
     ContractPaused = 10,
+    /// Soroban's execution model is single-threaded and atomic per transaction,
+    /// which eliminates classic EVM-style reentrancy. However, `create_token`
+    /// performs cross-contract calls (deploy + initialize + mint) that could
+    /// theoretically be chained in unexpected ways via a malicious token
+    /// contract. This guard adds defense-in-depth: if `create_token` is somehow
+    /// re-entered before the first invocation completes, the second call is
+    /// rejected immediately rather than corrupting factory state.
+    Reentrancy = 11,
 }
 
 #[contract]
@@ -70,6 +81,7 @@ impl TokenFactory {
         let state = FactoryState {
             admin: admin.clone(),
             paused: false,
+            locked: false,
             treasury,
             fee_token,
             base_fee,
@@ -115,12 +127,40 @@ impl TokenFactory {
 
         let mut state = Self::load_state(&env);
 
+        // Reentrancy guard: reject if a create_token call is already in progress.
+        if state.locked {
+            return Err(Error::Reentrancy);
+        }
+        state.locked = true;
+        Self::save_state(&env, &state);
+
+        let result = Self::create_token_inner(&env, creator, salt, token_wasm_hash, name, symbol, decimals, initial_supply, fee_payment, &mut state);
+
+        // Always release the lock, regardless of success or error.
+        state.locked = false;
+        Self::save_state(&env, &state);
+
+        result
+    }
+
+    fn create_token_inner(
+        env: &Env,
+        creator: Address,
+        salt: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        name: String,
+        symbol: String,
+        decimals: u32,
+        initial_supply: i128,
+        fee_payment: i128,
+        state: &mut FactoryState,
+    ) -> Result<Address, Error> {
         if fee_payment < state.base_fee {
             return Err(Error::InsufficientFee);
         }
 
         // Transfer fee to treasury using the stored fee token
-        token::TokenClient::new(&env, &state.fee_token).transfer(
+        token::TokenClient::new(env, &state.fee_token).transfer(
             &creator,
             &state.treasury,
             &fee_payment,
@@ -133,7 +173,7 @@ impl TokenFactory {
             .deploy(token_wasm_hash);
 
         // Initialize the deployed token
-        TokenInitClient::new(&env, &token_address).initialize(
+        TokenInitClient::new(env, &token_address).initialize(
             &creator,
             &decimals,
             &name,
@@ -142,7 +182,7 @@ impl TokenFactory {
 
         // Mint initial supply to creator if requested
         if initial_supply > 0 {
-            token::StellarAssetClient::new(&env, &token_address).mint(&creator, &initial_supply);
+            token::StellarAssetClient::new(env, &token_address).mint(&creator, &initial_supply);
         }
 
         state.token_count += 1;
@@ -156,14 +196,13 @@ impl TokenFactory {
             created_at: env.ledger().timestamp(),
             burn_enabled: true,
         });
-        Self::save_state(&env, &state);
 
         let creator_key = (symbol_short!("crtoks"), creator.clone());
         let mut list: Vec<u32> = env
             .storage()
             .instance()
             .get(&creator_key)
-            .unwrap_or_else(|| vec![&env]);
+            .unwrap_or_else(|| vec![env]);
         list.push_back(index);
         env.storage().instance().set(&creator_key, &list);
 

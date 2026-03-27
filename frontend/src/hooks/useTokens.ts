@@ -33,7 +33,7 @@ async function fetchTokens(creator?: string): Promise<TokenInfo[]> {
       events
         .filter((e) => e.type === 'token_created')
         .map((e) => e.data.tokenAddress)
-        .filter(Boolean),
+        .filter((addr): addr is string => !!addr),
     ),
   ]
 

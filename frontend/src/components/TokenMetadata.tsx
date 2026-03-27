@@ -19,7 +19,7 @@ interface TokenMetadataProps {
 type FetchState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'resolved'; imageUrl: string; description?: string }
+  | { status: 'resolved'; imageUrl: string; description: string | undefined }
   | { status: 'error' }
 
 const PLACEHOLDER_SRC = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 width%3D%22100%22 height%3D%22100%22 viewBox%3D%220 0 100 100%22%3E%3Crect width%3D%22100%22 height%3D%22100%22 fill%3D%22%23e5e7eb%22%2F%3E%3Ctext x%3D%2250%22 y%3D%2255%22 font-size%3D%2232%22 text-anchor%3D%22middle%22 fill%3D%22%239ca3af%22%3E%3F%3C%2Ftext%3E%3C%2Fsvg%3E'

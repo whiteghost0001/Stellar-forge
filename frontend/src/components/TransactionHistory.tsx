@@ -1,5 +1,6 @@
 import { Button, Spinner } from './UI'
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useStellarContext } from '../context/StellarContext'
 import { useNetwork } from '../context/NetworkContext'
 import { stellarExplorerUrl } from '../utils/formatting'
@@ -29,11 +30,11 @@ function truncate(str: string, len = 12): string {
   return `${str.slice(0, 6)}…${str.slice(-4)}`
 }
 
-function EventDataRow({ label, value }: { label: string; value: string }) {
+function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
   return (
     <span className="inline-flex gap-1 text-xs text-gray-600">
       <span className="font-medium">{label}:</span>
-      <span title={value} className="font-mono">{truncate(value, 20)}</span>
+      <span title={value} className="font-mono">{value ? truncate(value, 20) : '—'}</span>
     </span>
   )
 }
@@ -88,6 +89,7 @@ export const TransactionHistory: React.FC<Props> = ({
 }) => {
   const { stellarService } = useStellarContext()
   const { network } = useNetwork()
+  const { t } = useTranslation()
   const [events, setEvents] = useState<ContractEvent[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -135,22 +137,7 @@ export const TransactionHistory: React.FC<Props> = ({
     }
   }
 
-  const renderEventData = (event: ContractEvent) => {
-    const d = event.data
-    const dl = t('transactionHistory.dataLabels', { returnObjects: true }) as Record<string, string>
-    switch (event.type) {
-      case 'token_created':
-        return <div className="flex flex-wrap gap-3"><EventDataRow label={dl.token} value={d.tokenAddress} /><EventDataRow label={dl.creator} value={d.creator} /></div>
-      case 'tokens_minted':
-        return <div className="flex flex-wrap gap-3"><EventDataRow label={dl.token} value={d.tokenAddress} /><EventDataRow label={dl.to} value={d.to} /><EventDataRow label={dl.amount} value={d.amount} /></div>
-      case 'tokens_burned':
-        return <div className="flex flex-wrap gap-3"><EventDataRow label={dl.token} value={d.tokenAddress} /><EventDataRow label={dl.from} value={d.from} /><EventDataRow label={dl.amount} value={d.amount} /></div>
-      case 'metadata_set':
-        return <div className="flex flex-wrap gap-3"><EventDataRow label={dl.token} value={d.tokenAddress} /><EventDataRow label={dl.uri} value={d.metadataUri} /></div>
-      case 'fees_updated':
-        return <div className="flex flex-wrap gap-3"><EventDataRow label={dl.baseFee} value={d.baseFee} /><EventDataRow label={dl.metadataFee} value={d.metadataFee} /></div>
-    }
-  }
+  const renderLocalEventData = renderEventData
 
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
@@ -178,11 +165,11 @@ export const TransactionHistory: React.FC<Props> = ({
           <li key={event.id} className="flex flex-col gap-1 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}>
-                {eventLabels[event.type]}
+                {eventLabels[event.type] ?? event.type}
               </span>
               <span className="text-xs text-gray-400">{formatTimestamp(event.timestamp)}</span>
             </div>
-            {renderEventData(event)}
+            {renderLocalEventData(event)}
             <a
               href={stellarExplorerUrl('tx', event.txHash, network)}
               target="_blank"

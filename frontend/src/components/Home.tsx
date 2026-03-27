@@ -1,4 +1,5 @@
 import { Button } from './UI';
+import { useTranslation } from 'react-i18next'
 
 type HomeProps = {
   onGetStarted: () => void

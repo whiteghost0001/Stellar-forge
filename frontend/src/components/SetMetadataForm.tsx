@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input, Button, ConfirmModal } from './UI'
 import { isValidIPFSUri } from '../utils/validation'
 import { useToast } from '../context/ToastContext'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export const SetMetadataForm: React.FC<Props> = ({ tokenAddress: initialAddress = '', onSubmit }) => {
+  const { t } = useTranslation()
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [metadataUri, setMetadataUri] = useState('')
   const [loading, setLoading] = useState(false)

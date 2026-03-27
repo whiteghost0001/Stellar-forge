@@ -5,7 +5,7 @@ import { useNetwork } from './NetworkContext'
 interface WalletState {
   address: string | null
   isConnected: boolean
-  balance?: string
+  balance: string | undefined
 }
 
 interface WalletContextValue {
