@@ -20,14 +20,14 @@ export const validateTokenParams = (params: {
   const trimmedName = params.name?.trim() || ''
   const trimmedSymbol = params.symbol?.trim() || ''
 
-  // Name must be non-empty and at most 32 characters
   if (!trimmedName || trimmedName.length < 1 || trimmedName.length > 32) {
     errors.name = 'Token name must be 1-32 characters'
   }
 
-  // Symbol must be non-empty and at most 12 characters
   if (!trimmedSymbol || trimmedSymbol.length < 1 || trimmedSymbol.length > 12) {
     errors.symbol = 'Token symbol must be 1-12 characters'
+  } else if (!/^[A-Za-z0-9-]+$/.test(trimmedSymbol)) {
+    errors.symbol = 'Token symbol can only contain alphanumeric characters and hyphens'
   }
 
   if (params.decimals === undefined || params.decimals === null || params.decimals < 0 || params.decimals > 18) {
@@ -68,14 +68,18 @@ export const isValidImageFile = (file: File): { valid: boolean; error?: string }
 
 export const validateTokenName = (name: string): boolean => {
   const trimmed = name.trim()
-  // Non-empty and at most 32 characters
   return trimmed.length >= 1 && trimmed.length <= 32
 }
 
 export const validateTokenSymbol = (symbol: string): boolean => {
   const trimmed = symbol.trim()
-  // Non-empty and at most 12 characters
-  return trimmed.length >= 1 && trimmed.length <= 12
+  // Only allow alphanumeric characters and hyphens
+  const validPattern = /^[A-Za-z0-9-]+$/
+  return trimmed.length >= 1 && trimmed.length <= 12 && validPattern.test(trimmed)
+}
+
+export const sanitizeTokenInput = (input: string): string => {
+  return input.trim()
 }
 
 export const validateDecimals = (decimals: number): boolean => {

@@ -7,7 +7,7 @@ import { useTos } from '../context/TosContext'
 import { useStellarContext } from '../context/StellarContext'
 import { TokenDeployParams } from '../types'
 import { STELLAR_CONFIG } from '../config/stellar'
-import { validateTokenSymbol, validateTokenName, validateDecimals } from '../utils/validation'
+import { validateTokenSymbol, validateTokenName, validateDecimals, sanitizeTokenInput } from '../utils/validation'
 
 const ESTIMATED_FEE = '0.01' // XLM
 
@@ -30,19 +30,33 @@ export const TokenCreateForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateTokenName(name)) { addToast('Invalid token name', 'error'); return }
-    if (!validateTokenSymbol(symbol)) { addToast('Invalid token symbol', 'error'); return }
-    if (!validateDecimals(parseInt(decimals))) { addToast('Decimals must be between 0 and 18', 'error'); return }
+    // Sanitize inputs by trimming whitespace
+    const sanitizedName = sanitizeTokenInput(name)
+    const sanitizedSymbol = sanitizeTokenInput(symbol)
+    const sanitizedDescription = sanitizeTokenInput(description)
+
+    if (!validateTokenName(sanitizedName)) { 
+      addToast('Invalid token name: must be 1-32 characters', 'error'); 
+      return 
+    }
+    if (!validateTokenSymbol(sanitizedSymbol)) { 
+      addToast('Invalid token symbol: must be 1-12 alphanumeric characters or hyphens', 'error'); 
+      return 
+    }
+    if (!validateDecimals(parseInt(decimals))) { 
+      addToast('Decimals must be between 0 and 18', 'error'); 
+      return 
+    }
 
     const params: TokenDeployParams = {
-      name,
-      symbol,
+      name: sanitizedName,
+      symbol: sanitizedSymbol,
       decimals: parseInt(decimals),
       initialSupply,
       salt: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
       tokenWasmHash: STELLAR_CONFIG.factoryContractId, // Placeholder or actual hash
       feePayment: '100000', // Default fee
-      ...(description && { metadata: { description, image: new File([], '') } }),
+      ...(sanitizedDescription && { metadata: { description: sanitizedDescription, image: new File([], '') } }),
     }
 
     setPendingParams(params)
