@@ -2,23 +2,12 @@
 
 import { IPFS_CONFIG } from '../config/ipfs'
 import { withRetry, isTransientError } from '../utils/retry'
+import { IPFSConfigError, IPFSUploadError } from './ipfs-errors'
+
+export { IPFSConfigError, IPFSUploadError } from './ipfs-errors'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif']
-
-export class IPFSConfigError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'IPFSConfigError'
-  }
-}
-
-export class IPFSUploadError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'IPFSUploadError'
-  }
-}
 
 function validateConfig(): void {
   if (!IPFS_CONFIG.apiKey || !IPFS_CONFIG.apiSecret) {

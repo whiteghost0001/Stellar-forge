@@ -1,5 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { IPFSService, IPFSConfigError, IPFSUploadError } from '../services/ipfs'
+import { IPFSService } from '../services/ipfs'
+import { IPFSConfigError, IPFSUploadError } from '../services/ipfs-errors'
+
+// Keep error classes stable across vi.resetModules() calls
+vi.mock('../services/ipfs-errors', () => {
+  class IPFSConfigError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'IPFSConfigError'
+    }
+  }
+  class IPFSUploadError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'IPFSUploadError'
+    }
+  }
+  return { IPFSConfigError, IPFSUploadError }
+})
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,7 +37,7 @@ function mockXHR(status: number, responseText: string, triggerError = false) {
       // Simulate async completion
       Promise.resolve().then(() => {
         if (triggerError) {
-          uploadListeners['error']?.({} as Event)
+          listeners['error']?.({} as Event)
         } else {
           // Fire upload progress then load
           uploadListeners['progress']?.({
@@ -46,7 +64,9 @@ function mockXHR(status: number, responseText: string, triggerError = false) {
 
   vi.stubGlobal(
     'XMLHttpRequest',
-    vi.fn(() => xhrMock),
+    vi.fn().mockImplementation(function () {
+      return xhrMock
+    }),
   )
   return xhrMock
 }
