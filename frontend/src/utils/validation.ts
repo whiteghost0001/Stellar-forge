@@ -17,11 +17,16 @@ export const validateTokenParams = (params: {
 }) => {
   const errors: Record<string, string> = {}
 
-  if (!params.name || params.name.length < 1 || params.name.length > 32) {
+  const trimmedName = params.name?.trim() || ''
+  const trimmedSymbol = params.symbol?.trim() || ''
+
+  // Name must be non-empty and at most 32 characters
+  if (!trimmedName || trimmedName.length < 1 || trimmedName.length > 32) {
     errors.name = 'Token name must be 1-32 characters'
   }
 
-  if (!params.symbol || params.symbol.length < 1 || params.symbol.length > 12) {
+  // Symbol must be non-empty and at most 12 characters
+  if (!trimmedSymbol || trimmedSymbol.length < 1 || trimmedSymbol.length > 12) {
     errors.symbol = 'Token symbol must be 1-12 characters'
   }
 
@@ -62,11 +67,15 @@ export const isValidImageFile = (file: File): { valid: boolean; error?: string }
 }
 
 export const validateTokenName = (name: string): boolean => {
-  return name.length >= 1 && name.length <= 32
+  const trimmed = name.trim()
+  // Non-empty and at most 32 characters
+  return trimmed.length >= 1 && trimmed.length <= 32
 }
 
 export const validateTokenSymbol = (symbol: string): boolean => {
-  return symbol.length >= 1 && symbol.length <= 12
+  const trimmed = symbol.trim()
+  // Non-empty and at most 12 characters
+  return trimmed.length >= 1 && trimmed.length <= 12
 }
 
 export const validateDecimals = (decimals: number): boolean => {
