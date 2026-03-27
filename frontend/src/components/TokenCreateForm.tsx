@@ -72,7 +72,7 @@ export const TokenCreateForm: React.FC = () => {
       } else {
         addToast('Token deployment failed', 'error')
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Deployment error:', error)
       addToast('An error occurred during deployment', 'error')
     } finally {

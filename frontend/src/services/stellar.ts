@@ -1,6 +1,6 @@
 // Stellar SDK integration service
 import { STELLAR_CONFIG } from '../config/stellar'
-import type { ContractEvent, ContractEventType, GetEventsResult } from '../types'
+import type { ContractEvent, ContractEventType, DeploymentResult, GetEventsResult } from '../types'
 
 const EVENT_TOPICS: ContractEventType[] = [
   'token_created',
@@ -62,7 +62,7 @@ function scValToString(val: any, xdr: any): string {
       if (addr.switch() === xdr.ScAddressType.scAddressTypeAccount()) {
         return addr.accountId().publicKey().toString()
       }
-      return Buffer.from(addr.contractId()).toString('hex')
+      return Array.from(addr.contractId() as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
     }
     if (type === xdr.ScValType.scvI128()) {
       const hi = BigInt(val.i128().hi().toString())
@@ -74,6 +74,7 @@ function scValToString(val: any, xdr: any): string {
     if (type === xdr.ScValType.scvSymbol()) return val.sym().toString()
     if (type === xdr.ScValType.scvVoid()) return 'none'
     if (type === xdr.ScValType.scvVec()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const items: string[] = (val.vec() ?? []).map((v: any) => scValToString(v, xdr))
       return items.join(', ')
     }
@@ -103,6 +104,7 @@ async function parseRpcEvent(raw: RpcEventResponse): Promise<ContractEvent | nul
 
     const { xdr } = await import('stellar-sdk')
     const valueVal = xdr.ScVal.fromXDR(raw.value, 'base64')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items: any[] = valueVal.vec() ?? []
 
     const data: Record<string, string> = {}
@@ -164,9 +166,9 @@ async function rpcCall<T>(method: string, params: unknown): Promise<T> {
 // ── StellarService ────────────────────────────────────────────────────────────
 
 export class StellarService {
-  async deployToken(params: unknown): Promise<unknown> {
+  async deployToken(params: unknown): Promise<DeploymentResult> {
     console.log('Deploying token:', params)
-    return { success: true }
+    return { success: true, tokenAddress: '', transactionHash: '' }
   }
 
   async getTokenInfo(tokenAddress: string): Promise<unknown> {
