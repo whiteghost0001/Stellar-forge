@@ -5,9 +5,12 @@ import { useWallet } from './hooks/useWallet'
 import { Button } from './components/UI/Button'
 import { Spinner } from './components/UI/Spinner'
 import { truncateAddress, formatXLM } from './utils/formatting'
+import { Dashboard } from './components/Dashboard'
+import type { TokenInfo } from './types'
 
 function AppContent() {
   const [toast, setToast] = useState<string | null>(null)
+  const [tokens] = useState<TokenInfo[]>([])
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
 
   const handleGetStarted = () => {
@@ -98,7 +101,7 @@ function AppContent() {
               </div>
             )}
 
-            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 mb-6">
               <div className="text-center">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">
                   Welcome to Nova Launch
@@ -114,6 +117,8 @@ function AppContent() {
                 </button>
               </div>
             </div>
+
+            <Dashboard tokens={tokens} />
           </div>
         </main>
 
