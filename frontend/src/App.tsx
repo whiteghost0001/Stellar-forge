@@ -20,6 +20,7 @@ import { MintForm } from './components/MintForm'
 import { BurnForm } from './components/BurnForm'
 import { Dashboard } from './components/Dashboard'
 import { TokenDetail } from './components/TokenDetail'
+import { FAQ } from './components/FAQ'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
@@ -168,6 +169,7 @@ function AppContent() {
                 <Route path="/burn" element={<ProtectedRoute><ErrorBoundary><BurnForm /></ErrorBoundary></ProtectedRoute>} />
                 <Route path="/tokens" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
                 <Route path="/tokens/:address" element={<ProtectedRoute><ErrorBoundary><TokenDetail /></ErrorBoundary></ProtectedRoute>} />
+                <Route path="/faq" element={<ErrorBoundary><FAQ /></ErrorBoundary>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>

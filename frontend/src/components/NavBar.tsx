@@ -21,6 +21,7 @@ export const NavBar: React.FC<NavBarProps> = ({ onHelpClick }) => {
     { to: '/mint', label: t('nav.mint') },
     { to: '/burn', label: t('nav.burn') },
     { to: '/tokens', label: t('nav.tokens') },
+    { to: '/faq', label: t('nav.faq', 'FAQ') },
   ]
 
   return (
