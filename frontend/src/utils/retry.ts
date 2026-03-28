@@ -90,10 +90,7 @@ export const isTransientError = (error: unknown): boolean => {
  * @param options - Retry configuration options
  * @returns Promise resolving to the function result
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const {
     maxAttempts = DEFAULT_MAX_ATTEMPTS,
     baseDelayMs = DEFAULT_BASE_DELAY_MS,
@@ -120,11 +117,8 @@ export async function withRetry<T>(
 
       // Calculate exponential backoff delay: baseDelay * 2^(attempt-1)
       const delayMs = baseDelayMs * Math.pow(2, attempt - 1)
-      
-      console.warn(
-        `Attempt ${attempt}/${maxAttempts} failed, retrying in ${delayMs}ms...`,
-        error
-      )
+
+      console.warn(`Attempt ${attempt}/${maxAttempts} failed, retrying in ${delayMs}ms...`, error)
 
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }

@@ -3,7 +3,7 @@ import { useStellarContext } from '../context/StellarContext'
 import { useParams, Link } from 'react-router-dom'
 import { ipfsService } from '../services/ipfs'
 import { useNetwork } from '../context/NetworkContext'
-import { stellarExplorerUrl, ipfsToGatewayUrl } from '../utils/formatting'
+import { stellarExplorerUrl, ipfsToGatewayUrl, formatAddress } from '../utils/formatting'
 import { isValidContractAddress } from '../utils/validation'
 import type { TokenInfo, IPFSMetadata } from '../types'
 import { Card } from './UI/Card'
@@ -87,7 +87,9 @@ export const TokenDetail: React.FC = () => {
           No token found at address: <span className="font-mono">{address}</span>
         </p>
         <Link to="/tokens">
-          <Button variant="outline" size="sm">Back to Dashboard</Button>
+          <Button variant="outline" size="sm">
+            Back to Dashboard
+          </Button>
         </Link>
       </div>
     )
@@ -105,7 +107,9 @@ export const TokenDetail: React.FC = () => {
           </span>
         </h2>
         <Link to="/tokens">
-          <Button variant="outline" size="sm">← Back</Button>
+          <Button variant="outline" size="sm">
+            ← Back
+          </Button>
         </Link>
       </div>
 
@@ -120,8 +124,9 @@ export const TokenDetail: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-indigo-500 hover:underline"
+                title={address}
               >
-                {address}
+                {formatAddress(address!)}
               </a>
             </dd>
           </div>
@@ -142,16 +147,21 @@ export const TokenDetail: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-500 hover:underline"
+                  title={token.creator}
                 >
-                  {token.creator}
+                  {formatAddress(token.creator)}
                 </a>
-              ) : '—'}
+              ) : (
+                '—'
+              )}
             </dd>
           </div>
           {token.createdAt && (
             <div>
               <dt className="text-gray-500 dark:text-gray-400">Created</dt>
-              <dd className="text-gray-900 dark:text-gray-100 mt-1">{formatTimestamp(token.createdAt)}</dd>
+              <dd className="text-gray-900 dark:text-gray-100 mt-1">
+                {formatTimestamp(token.createdAt)}
+              </dd>
             </div>
           )}
           {token.metadataUri && (
@@ -174,7 +184,9 @@ export const TokenDetail: React.FC = () => {
                 src={imageUrl}
                 alt={`${token.name} token art`}
                 className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).style.display = 'none'
+                }}
               />
             )}
             <div className="space-y-1 text-sm">

@@ -2,6 +2,7 @@ import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
 import { MintForm } from './MintForm'
 import { stellarService } from '../services/stellar'
+import { TosProvider } from '../context/TosContext'
 
 vi.mock('../services/stellar', () => ({
   stellarService: {
@@ -10,9 +11,16 @@ vi.mock('../services/stellar', () => ({
   },
 }))
 
+const renderMintForm = () =>
+  render(
+    <TosProvider>
+      <MintForm />
+    </TosProvider>,
+  )
+
 describe('MintForm', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.clearAllMocks()
     ;(stellarService.accountExists as Mock).mockResolvedValue(true)
   })
@@ -22,9 +30,9 @@ describe('MintForm', () => {
   })
 
   it('debounces recipient account validation by 500ms', async () => {
-    render(<MintForm />)
+    renderMintForm()
 
-    const recipientInput = screen.getByLabelText('Recipient Address')
+    const recipientInput = screen.getByLabelText('Recipient Address', { exact: false })
     fireEvent.change(recipientInput, {
       target: { value: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF' },
     })
@@ -49,9 +57,9 @@ describe('MintForm', () => {
   it('shows a warning when the recipient account is not funded', async () => {
     ;(stellarService.accountExists as Mock).mockResolvedValue(false)
 
-    render(<MintForm />)
+    renderMintForm()
 
-    fireEvent.change(screen.getByLabelText('Recipient Address'), {
+    fireEvent.change(screen.getByLabelText('Recipient Address', { exact: false }), {
       target: { value: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF' },
     })
 
@@ -60,7 +68,9 @@ describe('MintForm', () => {
     })
 
     expect(
-      await screen.findByText('This address does not have a Stellar account yet. It may need to be funded first.'),
+      await screen.findByText(
+        'This address does not have a Stellar account yet. It may need to be funded first.',
+      ),
     ).toBeInTheDocument()
   })
 })

@@ -36,7 +36,10 @@ export const WalletConnectButton: React.FC = () => {
     return (
       <div className="inline-flex items-center gap-3">
         <div className="flex flex-col items-end">
-          <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
+          <span
+            className="font-mono text-sm text-gray-700 dark:text-gray-300"
+            title={wallet.address}
+          >
             {truncateAddress(wallet.address)}
           </span>
           {wallet.balance !== undefined ? (
@@ -44,17 +47,10 @@ export const WalletConnectButton: React.FC = () => {
               {formatXLM(wallet.balance)}
             </span>
           ) : (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              Loading balance...
-            </span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">Loading balance...</span>
           )}
         </div>
-        <Button
-          onClick={disconnect}
-          variant="outline"
-          size="sm"
-          aria-label="Disconnect wallet"
-        >
+        <Button onClick={disconnect} variant="outline" size="sm" aria-label="Disconnect wallet">
           Disconnect
         </Button>
       </div>
@@ -63,12 +59,7 @@ export const WalletConnectButton: React.FC = () => {
 
   // Disconnected state (default)
   return (
-    <Button
-      onClick={connect}
-      variant="primary"
-      size="md"
-      aria-label="Connect wallet"
-    >
+    <Button onClick={connect} variant="primary" size="md" aria-label="Connect wallet">
       Connect Wallet
     </Button>
   )

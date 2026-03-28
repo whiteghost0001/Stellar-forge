@@ -20,19 +20,19 @@ describe('TransactionStatus Component', () => {
   })
 
   test('renders pending state initially', async () => {
-    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
+    ;(stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
     render(<TransactionStatus txHash="test-hash" />)
     expect(screen.getByText('Transaction pending...')).toBeInTheDocument()
   })
 
   test('polls and handles successful transaction', async () => {
-    const onSuccess = vi.fn();
-    (stellarService.getTransaction as Mock)
+    const onSuccess = vi.fn()
+    ;(stellarService.getTransaction as Mock)
       .mockResolvedValueOnce({ status: 'pending' })
       .mockResolvedValueOnce({ status: 'success' })
 
     render(<TransactionStatus txHash="test-hash" onSuccess={onSuccess} />)
-    
+
     await act(async () => {
       await Promise.resolve()
     })
@@ -47,11 +47,14 @@ describe('TransactionStatus Component', () => {
   })
 
   test('polls and handles failed transaction', async () => {
-    const onError = vi.fn();
-    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'error', error: 'Insufficient funds' })
+    const onError = vi.fn()
+    ;(stellarService.getTransaction as Mock).mockResolvedValue({
+      status: 'error',
+      error: 'Insufficient funds',
+    })
 
     render(<TransactionStatus txHash="test-hash" onError={onError} />)
-    
+
     await act(async () => {
       await Promise.resolve()
     })
@@ -62,11 +65,11 @@ describe('TransactionStatus Component', () => {
   })
 
   test('handles 60s timeout properly', async () => {
-    const onError = vi.fn();
-    (stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
+    const onError = vi.fn()
+    ;(stellarService.getTransaction as Mock).mockResolvedValue({ status: 'pending' })
 
     render(<TransactionStatus txHash="test-hash" onError={onError} />)
-    
+
     await act(async () => {
       vi.advanceTimersByTime(60000)
     })

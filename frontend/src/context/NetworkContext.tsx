@@ -9,7 +9,9 @@ function getInitialNetwork(): Network {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'mainnet' || stored === 'testnet') return stored
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return (STELLAR_CONFIG.network as Network) ?? 'testnet'
 }
 
@@ -28,19 +30,25 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
 
   const switchNetwork = useCallback((n: Network) => {
     setNetwork(n)
-    try { localStorage.setItem(STORAGE_KEY, n) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, n)
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const cfg = STELLAR_CONFIG[network]
 
   return (
-    <NetworkContext.Provider value={{
-      network,
-      switchNetwork,
-      rpcUrl: cfg.sorobanRpcUrl,
-      horizonUrl: cfg.horizonUrl,
-      networkPassphrase: cfg.networkPassphrase,
-    }}>
+    <NetworkContext.Provider
+      value={{
+        network,
+        switchNetwork,
+        rpcUrl: cfg.sorobanRpcUrl,
+        horizonUrl: cfg.horizonUrl,
+        networkPassphrase: cfg.networkPassphrase,
+      }}
+    >
       {children}
     </NetworkContext.Provider>
   )

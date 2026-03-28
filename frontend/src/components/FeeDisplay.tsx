@@ -28,7 +28,10 @@ const LABELS: Record<FeeDisplayProps['feeType'], string> = {
   metadata: 'Metadata Fee',
 }
 
-export const FeeDisplay: React.FC<FeeDisplayProps> = ({ feeType, className = '' }: FeeDisplayProps) => {
+export const FeeDisplay: React.FC<FeeDisplayProps> = ({
+  feeType,
+  className = '',
+}: FeeDisplayProps) => {
   const [xlm, setXlm] = useState<number | null>(null)
   const [error, setError] = useState(false)
 
@@ -43,17 +46,15 @@ export const FeeDisplay: React.FC<FeeDisplayProps> = ({ feeType, className = '' 
       .catch(() => {
         if (!cancelled) setError(true)
       })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [feeType])
 
   const label = LABELS[feeType]
 
   if (error) {
-    return (
-      <span className={`text-sm text-red-500 ${className}`}>
-        {label}: unavailable
-      </span>
-    )
+    return <span className={`text-sm text-red-500 ${className}`}>{label}: unavailable</span>
   }
 
   if (xlm === null) {

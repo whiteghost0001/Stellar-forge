@@ -95,5 +95,3 @@ export interface GetEventsResult {
   events: ContractEvent[]
   cursor: string | null // opaque cursor for pagination
 }
-
-

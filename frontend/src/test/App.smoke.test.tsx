@@ -10,11 +10,14 @@ vi.mock('../components/Home', () => ({ Home: () => null }))
 vi.mock('../components/NavBar', () => ({ NavBar: () => null }))
 vi.mock('../components/NetworkSwitcher', () => ({ NetworkSwitcher: () => null }))
 vi.mock('../components/LanguageSwitcher', () => ({ LanguageSwitcher: () => null }))
-vi.mock('../components/ErrorBoundary', () => ({ default: ({ children }: { children: React.ReactNode }) => children }))
+vi.mock('../components/ErrorBoundary', () => ({
+  default: ({ children }: { children: React.ReactNode }) => children,
+}))
 vi.mock('../components/UI', () => ({
   ToastContainer: () => null,
-  Button: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) =>
-    <button onClick={onClick}>{children}</button>,
+  Button: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <button onClick={onClick}>{children}</button>
+  ),
   Spinner: () => null,
 }))
 
@@ -37,7 +40,14 @@ vi.mock('../services/stellar', () => ({
   StellarService: vi.fn().mockImplementation(() => ({
     getContractEvents: vi.fn().mockResolvedValue({ events: [], cursor: null }),
     getAllTokens: vi.fn().mockResolvedValue([]),
-    getFactoryState: vi.fn().mockResolvedValue({ baseFee: '0', metadataFee: '0', tokenCount: 0, admin: '', paused: false, treasury: '' }),
+    getFactoryState: vi.fn().mockResolvedValue({
+      baseFee: '0',
+      metadataFee: '0',
+      tokenCount: 0,
+      admin: '',
+      paused: false,
+      treasury: '',
+    }),
   })),
 }))
 

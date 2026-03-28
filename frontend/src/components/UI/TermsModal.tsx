@@ -12,7 +12,9 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
   // Block Escape key — modal is non-dismissible
   useEffect(() => {
     if (!isOpen) return
-    const block = (e: KeyboardEvent) => { if (e.key === 'Escape') e.stopImmediatePropagation() }
+    const block = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') e.stopImmediatePropagation()
+    }
     document.addEventListener('keydown', block, true)
     return () => document.removeEventListener('keydown', block, true)
   }, [isOpen])
@@ -34,7 +36,10 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
       >
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="tos-modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2
+            id="tos-modal-title"
+            className="text-xl font-semibold text-gray-900 dark:text-gray-100"
+          >
             Terms of Service &amp; Risk Disclosure
           </h2>
         </div>
@@ -55,8 +60,8 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept }) => {
             <li>
               <span className="font-medium">Financial responsibility:</span> You assume full
               responsibility for any financial losses, including but not limited to lost tokens,
-              failed transactions, or incorrect contract interactions resulting from your use of this
-              application.
+              failed transactions, or incorrect contract interactions resulting from your use of
+              this application.
             </li>
           </ul>
 

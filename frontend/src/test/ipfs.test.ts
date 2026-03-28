@@ -1,5 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { IPFSService, IPFSConfigError, IPFSUploadError } from '../services/ipfs'
+import { IPFSService } from '../services/ipfs'
+import { IPFSConfigError, IPFSUploadError } from '../services/ipfs-errors'
+
+// Keep error classes stable across vi.resetModules() calls
+vi.mock('../services/ipfs-errors', () => {
+  class IPFSConfigError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'IPFSConfigError'
+    }
+  }
+  class IPFSUploadError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'IPFSUploadError'
+    }
+  }
+  return { IPFSConfigError, IPFSUploadError }
+})
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,10 +37,14 @@ function mockXHR(status: number, responseText: string, triggerError = false) {
       // Simulate async completion
       Promise.resolve().then(() => {
         if (triggerError) {
-          uploadListeners['error']?.({} as Event)
+          listeners['error']?.({} as Event)
         } else {
           // Fire upload progress then load
-          uploadListeners['progress']?.({ lengthComputable: true, loaded: 512, total: 1024 } as unknown as Event)
+          uploadListeners['progress']?.({
+            lengthComputable: true,
+            loaded: 512,
+            total: 1024,
+          } as unknown as Event)
           listeners['load']?.({} as Event)
         }
       })
@@ -40,7 +62,12 @@ function mockXHR(status: number, responseText: string, triggerError = false) {
     responseText,
   }
 
-  vi.stubGlobal('XMLHttpRequest', vi.fn(() => xhrMock))
+  vi.stubGlobal(
+    'XMLHttpRequest',
+    vi.fn().mockImplementation(function () {
+      return xhrMock
+    }),
+  )
   return xhrMock
 }
 
@@ -70,8 +97,9 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSConfigError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSConfigError,
+      )
     })
 
     it('throws IPFSConfigError with a descriptive message', async () => {
@@ -81,8 +109,9 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toThrow('VITE_IPFS_API_KEY')
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toThrow(
+        'VITE_IPFS_API_KEY',
+      )
     })
   })
 
@@ -100,8 +129,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       const webp = makeFile('img.webp', 'image/webp')
 
-      await expect(fresh.uploadMetadata(webp, 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(webp, 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError for file exceeding 5MB', async () => {
@@ -110,8 +140,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       const big = makeFile('big.png', 'image/png', 6 * 1024 * 1024)
 
-      await expect(fresh.uploadMetadata(big, 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(big, 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('error message includes the file size when too large', async () => {
@@ -120,8 +151,7 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       const big = makeFile('big.png', 'image/png', 6 * 1024 * 1024)
 
-      await expect(fresh.uploadMetadata(big, 'desc', 'Token'))
-        .rejects.toThrow('5MB limit')
+      await expect(fresh.uploadMetadata(big, 'desc', 'Token')).rejects.toThrow('5MB limit')
     })
 
     it('accepts JPEG files', async () => {
@@ -129,11 +159,14 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImageCID' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ IpfsHash: 'QmMetaCID' }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ IpfsHash: 'QmMetaCID' }),
+        }),
+      )
 
       const result = await fresh.uploadMetadata(makeFile('img.jpg', 'image/jpeg'), 'desc', 'Token')
       expect(result).toBe('ipfs://QmMetaCID')
@@ -144,11 +177,14 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImageCID' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ IpfsHash: 'QmMetaCID' }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ IpfsHash: 'QmMetaCID' }),
+        }),
+      )
 
       const result = await fresh.uploadMetadata(makeFile('img.gif', 'image/gif'), 'desc', 'Token')
       expect(result).toBe('ipfs://QmMetaCID')
@@ -168,11 +204,14 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImageCID123' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ IpfsHash: 'QmMetaCID456' }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ IpfsHash: 'QmMetaCID456' }),
+        }),
+      )
 
       const uri = await fresh.uploadMetadata(makeFile(), 'A token', 'MyToken')
       expect(uri).toBe('ipfs://QmMetaCID456')
@@ -183,11 +222,14 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ IpfsHash: 'QmMeta' }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ IpfsHash: 'QmMeta' }),
+        }),
+      )
 
       const progress: number[] = []
       await fresh.uploadMetadata(makeFile(), 'desc', 'Token', (p) => progress.push(p))
@@ -203,10 +245,13 @@ describe('IPFSService', () => {
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
 
       let capturedBody: Record<string, unknown> = {}
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_url: string, opts: RequestInit) => {
-        capturedBody = JSON.parse(opts.body as string) as Record<string, unknown>
-        return { ok: true, status: 200, json: async () => ({ IpfsHash: 'QmMeta' }) }
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (_url: string, opts: RequestInit) => {
+          capturedBody = JSON.parse(opts.body as string) as Record<string, unknown>
+          return { ok: true, status: 200, json: async () => ({ IpfsHash: 'QmMeta' }) }
+        }),
+      )
 
       await fresh.uploadMetadata(makeFile(), 'My description', 'CoolToken')
 
@@ -231,8 +276,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       mockXHR(401, 'Unauthorized')
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError on XHR non-200 status', async () => {
@@ -241,8 +287,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       mockXHR(500, 'Internal Server Error')
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError on XHR network error', async () => {
@@ -251,8 +298,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       mockXHR(0, '', true) // triggerError = true
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError when Pinata returns malformed JSON for image', async () => {
@@ -261,8 +309,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       mockXHR(200, 'not-json')
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError when image response is missing IpfsHash', async () => {
@@ -271,8 +320,9 @@ describe('IPFSService', () => {
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ something: 'else' }))
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError on fetch network error for JSON upload', async () => {
@@ -282,8 +332,9 @@ describe('IPFSService', () => {
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError on 401 from JSON upload', async () => {
@@ -291,14 +342,18 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-        json: async () => ({}),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 401,
+          json: async () => ({}),
+        }),
+      )
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toThrow('authentication failed')
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toThrow(
+        'authentication failed',
+      )
     })
 
     it('throws IPFSUploadError on non-ok fetch response for JSON upload', async () => {
@@ -306,14 +361,18 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-        json: async () => ({}),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 503,
+          json: async () => ({}),
+        }),
+      )
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError when JSON upload response is missing IpfsHash', async () => {
@@ -321,14 +380,18 @@ describe('IPFSService', () => {
       const { IPFSService: Fresh } = await import('../services/ipfs')
       const fresh = new Fresh()
       mockXHR(200, JSON.stringify({ IpfsHash: 'QmImg' }))
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ noHash: true }),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ noHash: true }),
+        }),
+      )
 
-      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(fresh.uploadMetadata(makeFile(), 'desc', 'Token')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
   })
 
@@ -337,11 +400,14 @@ describe('IPFSService', () => {
   describe('getMetadata', () => {
     it('fetches and returns parsed metadata JSON', async () => {
       const meta = { name: 'MyToken', description: 'A token', image: 'ipfs://QmImg' }
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => meta,
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => meta,
+        }),
+      )
 
       const result = await service.getMetadata('ipfs://QmSomeCID')
       expect(result).toEqual(meta)
@@ -349,10 +415,13 @@ describe('IPFSService', () => {
 
     it('constructs the correct gateway URL from the CID', async () => {
       let calledUrl = ''
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
-        calledUrl = url
-        return { ok: true, status: 200, json: async () => ({}) }
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string) => {
+          calledUrl = url
+          return { ok: true, status: 200, json: async () => ({}) }
+        }),
+      )
 
       await service.getMetadata('ipfs://QmTestCID')
       expect(calledUrl).toContain('QmTestCID')
@@ -360,37 +429,43 @@ describe('IPFSService', () => {
     })
 
     it('throws IPFSUploadError for non-ipfs:// URI', async () => {
-      await expect(service.getMetadata('https://example.com/meta.json'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(service.getMetadata('https://example.com/meta.json')).rejects.toBeInstanceOf(
+        IPFSUploadError,
+      )
     })
 
     it('throws IPFSUploadError on network error', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 
-      await expect(service.getMetadata('ipfs://QmCID'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
     })
 
     it('throws IPFSUploadError on non-ok HTTP response', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: async () => ({}),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          json: async () => ({}),
+        }),
+      )
 
-      await expect(service.getMetadata('ipfs://QmCID'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
     })
 
     it('throws IPFSUploadError when response is not valid JSON', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => { throw new SyntaxError('Unexpected token') },
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw new SyntaxError('Unexpected token')
+          },
+        }),
+      )
 
-      await expect(service.getMetadata('ipfs://QmCID'))
-        .rejects.toBeInstanceOf(IPFSUploadError)
+      await expect(service.getMetadata('ipfs://QmCID')).rejects.toBeInstanceOf(IPFSUploadError)
     })
   })
 

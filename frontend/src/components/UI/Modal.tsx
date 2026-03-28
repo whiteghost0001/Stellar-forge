@@ -31,7 +31,7 @@ export const Modal: React.FC<ModalProps> = ({
     if (!dialog) return
 
     const focusable = dialog.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     )
     const first = focusable[0]
     const last = focusable[focusable.length - 1]
@@ -44,12 +44,21 @@ export const Modal: React.FC<ModalProps> = ({
         return
       }
       if (e.key !== 'Tab') return
-      if (focusable.length === 0) { e.preventDefault(); return }
+      if (focusable.length === 0) {
+        e.preventDefault()
+        return
+      }
 
       if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+        if (document.activeElement === first) {
+          e.preventDefault()
+          last?.focus()
+        }
       } else {
-        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+        if (document.activeElement === last) {
+          e.preventDefault()
+          first?.focus()
+        }
       }
     }
 
@@ -61,7 +70,9 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [isOpen])
 
   if (!isOpen) return null
@@ -96,8 +107,19 @@ export const Modal: React.FC<ModalProps> = ({
             aria-label="Close modal"
             className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 -mr-1"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>

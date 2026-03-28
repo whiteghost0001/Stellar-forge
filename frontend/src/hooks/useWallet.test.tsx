@@ -22,14 +22,22 @@ function Consumer() {
       <span data-testid="connected">{String(wallet.isConnected)}</span>
       <span data-testid="connecting">{String(isConnecting)}</span>
       <span data-testid="error">{error ?? 'null'}</span>
-      <button data-testid="connect" onClick={connect}>Connect</button>
-      <button data-testid="disconnect" onClick={disconnect}>Disconnect</button>
+      <button data-testid="connect" onClick={connect}>
+        Connect
+      </button>
+      <button data-testid="disconnect" onClick={disconnect}>
+        Disconnect
+      </button>
     </div>
   )
 }
 
 const renderWithProvider = () =>
-  render(<WalletProvider><Consumer /></WalletProvider>)
+  render(
+    <WalletProvider>
+      <Consumer />
+    </WalletProvider>,
+  )
 
 describe('useWallet', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -45,7 +53,9 @@ describe('useWallet', () => {
     vi.mocked(walletService.connect).mockResolvedValue('GABC123')
     renderWithProvider()
 
-    await act(async () => { screen.getByTestId('connect').click() })
+    await act(async () => {
+      screen.getByTestId('connect').click()
+    })
 
     expect(screen.getByTestId('connected').textContent).toBe('true')
     expect(screen.getByTestId('address').textContent).toBe('GABC123')
@@ -56,7 +66,9 @@ describe('useWallet', () => {
     vi.mocked(walletService.connect).mockRejectedValue(new Error('User rejected'))
     renderWithProvider()
 
-    await act(async () => { screen.getByTestId('connect').click() })
+    await act(async () => {
+      screen.getByTestId('connect').click()
+    })
 
     expect(screen.getByTestId('connected').textContent).toBe('false')
     expect(screen.getByTestId('error').textContent).toBe('User rejected')
@@ -66,8 +78,12 @@ describe('useWallet', () => {
     vi.mocked(walletService.connect).mockResolvedValue('GABC123')
     renderWithProvider()
 
-    await act(async () => { screen.getByTestId('connect').click() })
-    act(() => { screen.getByTestId('disconnect').click() })
+    await act(async () => {
+      screen.getByTestId('connect').click()
+    })
+    act(() => {
+      screen.getByTestId('disconnect').click()
+    })
 
     expect(screen.getByTestId('connected').textContent).toBe('false')
     expect(screen.getByTestId('address').textContent).toBe('null')

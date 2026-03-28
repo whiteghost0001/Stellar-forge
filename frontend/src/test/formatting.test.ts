@@ -12,47 +12,53 @@ import {
 
 describe('ipfsToGatewayUrl', () => {
   it('converts CIDv0 ipfs URI to pinata gateway URL', () => {
-    expect(ipfsToGatewayUrl('ipfs://QmXxx'))
-      .toBe('https://gateway.pinata.cloud/ipfs/QmXxx')
+    expect(ipfsToGatewayUrl('ipfs://QmXxx')).toBe('https://gateway.pinata.cloud/ipfs/QmXxx')
   })
 
   it('converts CIDv1 ipfs URI to pinata gateway URL', () => {
-    expect(ipfsToGatewayUrl('ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'))
-      .toBe('https://gateway.pinata.cloud/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi')
+    expect(
+      ipfsToGatewayUrl('ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
+    ).toBe(
+      'https://gateway.pinata.cloud/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+    )
   })
 
   it('returns non-IPFS URIs unchanged', () => {
-    expect(ipfsToGatewayUrl('https://example.com/metadata.json'))
-      .toBe('https://example.com/metadata.json')
+    expect(ipfsToGatewayUrl('https://example.com/metadata.json')).toBe(
+      'https://example.com/metadata.json',
+    )
   })
 })
 
 describe('stellarExplorerUrl', () => {
   it('builds a testnet tx link', () => {
-    expect(stellarExplorerUrl('tx', 'abc123', 'testnet'))
-      .toBe('https://stellar.expert/explorer/testnet/tx/abc123')
+    expect(stellarExplorerUrl('tx', 'abc123', 'testnet')).toBe(
+      'https://stellar.expert/explorer/testnet/tx/abc123',
+    )
   })
 
   it('builds a mainnet tx link', () => {
-    expect(stellarExplorerUrl('tx', 'abc123', 'mainnet'))
-      .toBe('https://stellar.expert/explorer/public/tx/abc123')
+    expect(stellarExplorerUrl('tx', 'abc123', 'mainnet')).toBe(
+      'https://stellar.expert/explorer/public/tx/abc123',
+    )
   })
 
   it('builds a contract link', () => {
-    expect(stellarExplorerUrl('contract', 'CABC', 'testnet'))
-      .toBe('https://stellar.expert/explorer/testnet/contract/CABC')
+    expect(stellarExplorerUrl('contract', 'CABC', 'testnet')).toBe(
+      'https://stellar.expert/explorer/testnet/contract/CABC',
+    )
   })
 
   it('builds an account link', () => {
-    expect(stellarExplorerUrl('account', 'GABC', 'mainnet'))
-      .toBe('https://stellar.expert/explorer/public/account/GABC')
+    expect(stellarExplorerUrl('account', 'GABC', 'mainnet')).toBe(
+      'https://stellar.expert/explorer/public/account/GABC',
+    )
   })
 
   it('defaults to testnet', () => {
     expect(stellarExplorerUrl('tx', 'xyz')).toContain('testnet')
   })
 })
-
 
 describe('formatXLM', () => {
   it('formats a number to 7 decimal places with XLM suffix', () => {

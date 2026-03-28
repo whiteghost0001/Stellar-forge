@@ -31,7 +31,9 @@ export const MainnetConfirmationModal: React.FC<MainnetConfirmationModalProps> =
       className="max-w-2xl"
       footer={
         <>
-          <Button onClick={onClose} variant="secondary">{t('mainnetModal.cancel')}</Button>
+          <Button onClick={onClose} variant="secondary">
+            {t('mainnetModal.cancel')}
+          </Button>
           <Button onClick={() => isConfirmed && onConfirm()} disabled={!isConfirmed}>
             {t('mainnetModal.deploy')}
           </Button>
@@ -51,8 +53,12 @@ export const MainnetConfirmationModal: React.FC<MainnetConfirmationModalProps> =
               [t('mainnetModal.symbol'), tokenParams.symbol],
               [t('mainnetModal.decimals'), String(tokenParams.decimals)],
               [t('mainnetModal.initialSupply'), String(tokenParams.initialSupply)],
-              ...(tokenParams.metadata?.description ? [[t('mainnetModal.description'), tokenParams.metadata.description]] : []),
-              ...(tokenParams.metadata?.image ? [[t('mainnetModal.image'), tokenParams.metadata.image.name]] : []),
+              ...(tokenParams.metadata?.description
+                ? [[t('mainnetModal.description'), tokenParams.metadata.description]]
+                : []),
+              ...(tokenParams.metadata?.image
+                ? [[t('mainnetModal.image'), tokenParams.metadata.image.name]]
+                : []),
             ] as [string, string][]
           ).map(([label, value]) => (
             <div key={label} className="flex justify-between">

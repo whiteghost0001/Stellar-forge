@@ -76,9 +76,7 @@ export function useTokenDashboard(): UseTokenDashboardResult {
       )
 
       const rows: TokenRow[] = results
-        .map((r, i) =>
-          r.status === 'fulfilled' ? { ...r.value, address: addresses[i] } : null,
-        )
+        .map((r, i) => (r.status === 'fulfilled' ? { ...r.value, address: addresses[i] } : null))
         .filter((r): r is TokenRow => r !== null)
 
       cachedRows = rows
