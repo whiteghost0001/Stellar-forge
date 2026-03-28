@@ -23,6 +23,33 @@ export const CONTRACT_ERROR_MESSAGES: Record<number, string> = {
 export function parseContractError(err: unknown): Error {
   const msg = err instanceof Error ? err.message : String(err)
 
+  // User rejected the transaction in Freighter
+  if (
+    msg.toLowerCase().includes('user declined') ||
+    msg.toLowerCase().includes('user rejected') ||
+    msg.toLowerCase().includes('rejected by user')
+  ) {
+    return new Error('Transaction rejected. You declined the signing request in your wallet.')
+  }
+
+  // Insufficient XLM to cover fees
+  if (
+    msg.toLowerCase().includes('insufficient') ||
+    msg.toLowerCase().includes('op_underfunded') ||
+    msg.toLowerCase().includes('balance')
+  ) {
+    return new Error('Insufficient funds. Your XLM balance is too low to cover this transaction.')
+  }
+
+  // Network / RPC timeout
+  if (
+    msg.toLowerCase().includes('timeout') ||
+    msg.toLowerCase().includes('timed out') ||
+    msg.toLowerCase().includes('network')
+  ) {
+    return new Error('Network timeout. The Stellar network did not respond in time. Please retry.')
+  }
+
   const match = msg.match(/Error\(Contract,\s*(\d+)\)/)
   if (match?.[1]) {
     const code = parseInt(match[1], 10)
