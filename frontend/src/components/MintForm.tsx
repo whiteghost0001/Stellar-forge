@@ -14,12 +14,18 @@ interface MintFormProps {
   onSuccess?: () => void
 }
 
-export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress = '', onSuccess }) => {
+export const MintForm: React.FC<MintFormProps> = ({
+  tokenAddress: initialAddress = '',
+  onSuccess,
+}) => {
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [pending, setPending] = useState(false)
+  const [recipientHasAccount, setRecipientHasAccount] = useState<boolean | null>(null)
+  const [recipientValidationError, setRecipientValidationError] = useState<string | null>(null)
+  const [isCheckingRecipient, setIsCheckingRecipient] = useState(false)
   const { requireTos } = useTos()
 
   const debouncedAddress = useDebounce(tokenAddress, ADDRESS_DEBOUNCE_DELAY)
@@ -27,7 +33,10 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
 
   useEffect(() => {
     if (!debouncedAddress) return
-    stellarService.getTokenInfo(debouncedAddress).then(setTokenInfo).catch(() => setTokenInfo(null))
+    stellarService
+      .getTokenInfo(debouncedAddress)
+      .then(setTokenInfo)
+      .catch(() => setTokenInfo(null))
   }, [debouncedAddress])
 
   useEffect(() => {
@@ -51,7 +60,8 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
     setRecipientValidationError(null)
     setIsCheckingRecipient(true)
 
-    stellarService.accountExists(trimmedRecipient)
+    stellarService
+      .accountExists(trimmedRecipient)
       .then((exists) => {
         if (cancelled) return
         setRecipientHasAccount(exists)
@@ -108,7 +118,7 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
             setIsCheckingRecipient(false)
           }}
           placeholder="G..."
-          error={recipientValidationError ?? undefined}
+          {...(recipientValidationError ? { error: recipientValidationError } : {})}
           required
         />
         {isCheckingRecipient && !recipientValidationError && (
@@ -130,7 +140,9 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
           min="0"
           required
         />
-        <Button type="submit" variant="primary" className="w-full sm:w-auto">Mint</Button>
+        <Button type="submit" variant="primary" className="w-full sm:w-auto">
+          Mint
+        </Button>
       </form>
 
       <ConfirmModal
@@ -138,7 +150,10 @@ export const MintForm: React.FC<MintFormProps> = ({ tokenAddress: initialAddress
         title="Confirm Mint"
         description="You are about to mint tokens to the recipient address."
         details={[
-          { label: 'Token', value: tokenInfo ? `${tokenInfo.name} (${tokenInfo.symbol})` : tokenAddress },
+          {
+            label: 'Token',
+            value: tokenInfo ? `${tokenInfo.name} (${tokenInfo.symbol})` : tokenAddress,
+          },
           { label: 'Recipient', value: recipient },
           { label: 'Amount', value: amount },
           { label: 'Estimated Fee', value: `${ESTIMATED_FEE} XLM` },

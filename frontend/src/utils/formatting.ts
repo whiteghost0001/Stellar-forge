@@ -6,9 +6,23 @@ export const formatXLM = (amount: string | number): string => {
   return `${parseFloat(amount.toString()).toFixed(7)} XLM`
 }
 
-export const truncateAddress = (address: string, startChars: number = 6, endChars: number = 4): string => {
+export const truncateAddress = (
+  address: string,
+  startChars: number = 6,
+  endChars: number = 4,
+): string => {
   if (address.length <= startChars + endChars) return address
   return `${address.slice(0, startChars)}...${address.slice(-endChars)}`
+}
+
+export const formatAddress = (
+  address: string,
+  prefixLen: number = 6,
+  suffixLen: number = 4,
+): string => {
+  if (!address) return ''
+  if (address.length <= prefixLen + suffixLen) return address
+  return `${address.slice(0, prefixLen)}...${address.slice(-suffixLen)}`
 }
 
 export const stroopsToXLM = (stroops: number | string): number => {
@@ -29,8 +43,14 @@ export const ipfsToGatewayUrl = (uri: string): string => {
 
 // Format as 'Mar 19, 2026, 3:28 PM UTC'
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
-  month: 'short', day: 'numeric', year: 'numeric',
-  hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC', timeZoneName: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'UTC',
+  timeZoneName: 'short',
 })
 
 export const formatTimestamp = (timestamp: number): string =>

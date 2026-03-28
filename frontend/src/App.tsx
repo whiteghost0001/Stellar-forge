@@ -1,6 +1,5 @@
 import React from 'react'
-import { ToastContainer, Button, Spinner } from './components/UI';
-import { OnboardingModal } from './components/UI/OnboardingModal';
+import { ToastContainer, Button, Spinner } from './components/UI'
 import './App.css'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -24,7 +23,6 @@ import { FAQ } from './components/FAQ'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
-import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -37,9 +35,7 @@ function AppContent() {
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
   const { addToast } = useToast()
   const { t } = useTranslation()
-  const [showFriendbotBanner, setShowBanner] = React.useState(
-    () => !!(wallet.isConnected && wallet.balance && parseFloat(wallet.balance) < 1)
-  )
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   const handleGetStarted = () => addToast(t('home.welcomeToast'), 'info')
 
@@ -94,57 +90,61 @@ function AppContent() {
                   <div className="flex items-center gap-3">
                     <FundbotButton />
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div
+                        className="text-sm font-medium text-gray-900"
+                        title={wallet.address ?? undefined}
+                      >
                         {wallet.address && truncateAddress(wallet.address)}
                       </div>
                       <Button onClick={handleDisconnect} variant="secondary" size="sm">
                         {t('wallet.disconnect')}
                       </Button>
                     </div>
-                  ) : (
-                    <Button onClick={handleConnect} disabled={isConnecting} size="sm">
-                      {isConnecting ? (
-                        <span className="flex items-center gap-2">
-                          <Spinner size="sm" />
-                          <span className="hidden sm:inline">{t('wallet.connecting')}</span>
-                        </span>
-                      ) : (
-                        t('wallet.connect')
-                      )}
-                    </Button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <Button onClick={handleConnect} disabled={isConnecting} size="sm">
+                    {isConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <Spinner size="sm" />
+                        <span className="hidden sm:inline">{t('wallet.connecting')}</span>
+                      </span>
+                    ) : (
+                      t('wallet.connect')
+                    )}
+                  </Button>
+                )}
               </div>
-
-              {/* Wallet address on mobile when connected */}
-              {wallet.isConnected && wallet.address && (
-                <div className="sm:hidden text-xs text-gray-600 truncate">
-                  {truncateAddress(wallet.address)}
-                  {wallet.balance && <span className="ml-2">{formatXLM(wallet.balance)}</span>}
-                </div>
-              )}
-
-              {/* Install Freighter link on mobile */}
-              {!isInstalled && (
-                <a
-                  href="https://www.freighter.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sm:hidden text-xs text-blue-600 hover:text-blue-800 underline"
-                >
-                  {t('wallet.installFreighter')}
-                </a>
-              )}
             </div>
+
+            {wallet.isConnected && wallet.address && (
+              <div className="sm:hidden text-xs text-gray-600 truncate" title={wallet.address}>
+                {truncateAddress(wallet.address)}
+                {wallet.balance && <span className="ml-2">{formatXLM(wallet.balance)}</span>}
+              </div>
+            )}
+
+            {!isInstalled && (
+              <a
+                href="https://www.freighter.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sm:hidden text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                {t('wallet.installFreighter')}
+              </a>
+            )}
 
             <NavBar onHelpClick={() => setShowOnboarding(true)} />
           </div>
         </header>
+        {showOnboarding && null /* OnboardingModal placeholder */}
 
         {!isFactoryConfigured() && (
           <div className="bg-yellow-50 border-b border-yellow-300 p-4" role="alert">
             <div className="max-w-7xl mx-auto text-yellow-800 text-sm font-medium">
-              ⚠️ Factory contract not configured. Please set <code className="font-mono bg-yellow-100 px-1 rounded">VITE_FACTORY_CONTRACT_ID</code> in your <code className="font-mono bg-yellow-100 px-1 rounded">.env</code> file.
+              ⚠️ Factory contract not configured. Please set{' '}
+              <code className="font-mono bg-yellow-100 px-1 rounded">VITE_FACTORY_CONTRACT_ID</code>{' '}
+              in your <code className="font-mono bg-yellow-100 px-1 rounded">.env</code> file.
             </div>
           </div>
         )}
@@ -163,17 +163,67 @@ function AppContent() {
 
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <Routes>
-                <Route path="/" element={<ErrorBoundary><Home onGetStarted={handleGetStarted} /></ErrorBoundary>} />
-                <Route path="/create" element={<ProtectedRoute><ErrorBoundary><CreateToken /></ErrorBoundary></ProtectedRoute>} />
-                <Route path="/mint" element={<ProtectedRoute><ErrorBoundary><MintForm /></ErrorBoundary></ProtectedRoute>} />
-                <Route path="/burn" element={<ProtectedRoute><ErrorBoundary><BurnForm /></ErrorBoundary></ProtectedRoute>} />
-                <Route path="/tokens" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
-                <Route path="/tokens/:address" element={<ProtectedRoute><ErrorBoundary><TokenDetail /></ErrorBoundary></ProtectedRoute>} />
-                <Route path="/faq" element={<ErrorBoundary><FAQ /></ErrorBoundary>} />
+                <Route
+                  path="/"
+                  element={
+                    <ErrorBoundary>
+                      <Home onGetStarted={handleGetStarted} />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/create"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <CreateToken />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mint"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <MintForm />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/burn"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <BurnForm />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tokens"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <Dashboard />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tokens/:address"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <TokenDetail />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>
-            <Dashboard />
           </div>
         </main>
 

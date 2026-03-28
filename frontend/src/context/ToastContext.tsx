@@ -24,11 +24,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const addToast = useCallback((message: string, variant: ToastVariant = 'info') => {
-    const id = nextId.current++
-    setToasts((prev) => [...prev, { id, message, variant }])
-    setTimeout(() => removeToast(id), 5000)
-  }, [removeToast])
+  const addToast = useCallback(
+    (message: string, variant: ToastVariant = 'info') => {
+      const id = nextId.current++
+      setToasts((prev) => [...prev, { id, message, variant }])
+      setTimeout(() => removeToast(id), 5000)
+    },
+    [removeToast],
+  )
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>

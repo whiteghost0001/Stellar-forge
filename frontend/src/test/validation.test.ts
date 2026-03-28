@@ -7,7 +7,9 @@ describe('isValidIPFSUri', () => {
   })
 
   it('accepts a valid CIDv1 URI', () => {
-    expect(isValidIPFSUri('ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi')).toBe(true)
+    expect(
+      isValidIPFSUri('ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
+    ).toBe(true)
   })
 
   it('rejects an empty string', () => {
@@ -75,7 +77,8 @@ import {
 // A real valid Ed25519 public key (generated via Keypair.random())
 const VALID_ACCOUNT = 'GDNQ2ULB7MXLA4GJBTAAZQON3IEO4HUCYFQMAHVAA2RTC4L4B4G5IK4C'
 // Same address with last char flipped — valid format, invalid checksum
-const INVALID_CHECKSUM_ACCOUNT = VALID_ACCOUNT.slice(0, 55) + (VALID_ACCOUNT[55] === 'N' ? 'M' : 'N')
+const INVALID_CHECKSUM_ACCOUNT =
+  VALID_ACCOUNT.slice(0, 55) + (VALID_ACCOUNT[55] === 'N' ? 'M' : 'N')
 // A real valid contract address (C...)
 const VALID_CONTRACT = 'CA3D5KRYM6CB7OWQ6TWYRR3Z4T7GNZLKERYNZGGA5SOAOPIFY6YQGAXE'
 
@@ -124,7 +127,7 @@ describe('isValidContractAddress', () => {
 })
 
 describe('isValidImageFile', () => {
-  const makeFile = (type: string, size: number) => ({ type, size } as File)
+  const makeFile = (type: string, size: number) => ({ type, size }) as File
 
   it('accepts a valid JPEG under 5MB', () => {
     expect(isValidImageFile(makeFile('image/jpeg', 1024)).valid).toBe(true)

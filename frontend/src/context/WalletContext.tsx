@@ -2,6 +2,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { walletService } from '../services/wallet'
 import { useNetwork } from './NetworkContext'
 
+function useNetworkSafe() {
+  try {
+    return useNetwork()
+  } catch {
+    return { network: 'testnet' as const }
+  }
+}
+
 interface WalletState {
   address: string | null
   isConnected: boolean
@@ -21,7 +29,7 @@ interface WalletContextValue {
 const WalletContext = createContext<WalletContextValue | null>(null)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const { network } = useNetwork()
+  const { network } = useNetworkSafe()
   const [wallet, setWallet] = useState<WalletState>({
     address: null,
     isConnected: false,

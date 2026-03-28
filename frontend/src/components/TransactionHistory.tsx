@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useStellarContext } from '../context/StellarContext'
 import { useNetwork } from '../context/NetworkContext'
-import { stellarExplorerUrl } from '../utils/formatting'
+import { stellarExplorerUrl, formatAddress } from '../utils/formatting'
 import type { ContractEvent, ContractEventType } from '../types'
 
 interface Props {
@@ -23,24 +23,19 @@ const EVENT_COLORS: Record<ContractEventType, string> = {
 
 function formatTimestamp(unix: number): string {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-function truncate(str: string, len = 12): string {
-  if (!str || str.length <= len) return str
-  return `${str.slice(0, 6)}…${str.slice(-4)}`
+  return new Date(unix * 1000).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
 }
 
 function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs text-gray-600">
       <span className="font-medium">{label}:</span>
-      {value ? (
-        <>
-          <span title={value} className="font-mono">{truncate(value, 20)}</span>
-          <CopyButton value={value} ariaLabel={`Copy ${label.toLowerCase()}`} className="h-3 w-3" />
-        </>
-      ) : '—'}
+      <span title={value} className="font-mono">
+        {value ? formatAddress(value) : '—'}
+      </span>
     </span>
   )
 }
@@ -106,14 +101,17 @@ export const TransactionHistory: React.FC<Props> = ({
   const filterEvents = useCallback(
     (evts: ContractEvent[]) =>
       tokenAddress
-        ? evts.filter((e) => e.data.tokenAddress === tokenAddress || e.data.creator === tokenAddress)
+        ? evts.filter(
+            (e) => e.data.tokenAddress === tokenAddress || e.data.creator === tokenAddress,
+          )
         : evts,
     [tokenAddress],
   )
 
   const fetchInitial = useCallback(async () => {
     if (!contractId) return
-    setLoading(true); setError(null)
+    setLoading(true)
+    setError(null)
     try {
       const result = await stellarService.getContractEvents(contractId, pageSize)
       setEvents(filterEvents(result.events))
@@ -126,7 +124,9 @@ export const TransactionHistory: React.FC<Props> = ({
     }
   }, [contractId, pageSize, filterEvents, stellarService])
 
-  useEffect(() => { fetchInitial() }, [fetchInitial])
+  useEffect(() => {
+    fetchInitial()
+  }, [fetchInitial])
 
   const loadMore = async () => {
     if (!cursor || loadingMore) return
@@ -145,7 +145,12 @@ export const TransactionHistory: React.FC<Props> = ({
 
   const renderLocalEventData = renderEventData
 
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+  if (loading)
+    return (
+      <div className="flex justify-center py-8">
+        <Spinner />
+      </div>
+    )
 
   if (error) {
     return (
@@ -159,10 +164,15 @@ export const TransactionHistory: React.FC<Props> = ({
   }
 
   if (events.length === 0) {
-    return <p className="py-6 text-center text-sm text-gray-500">{t('transactionHistory.noEvents')}</p>
+    return (
+      <p className="py-6 text-center text-sm text-gray-500">{t('transactionHistory.noEvents')}</p>
+    )
   }
 
-  const eventLabels = t('transactionHistory.eventLabels', { returnObjects: true }) as Record<ContractEventType, string>
+  const eventLabels = t('transactionHistory.eventLabels', { returnObjects: true }) as Record<
+    ContractEventType,
+    string
+  >
 
   return (
     <div className="space-y-3">
@@ -170,24 +180,23 @@ export const TransactionHistory: React.FC<Props> = ({
         {events.map((event) => (
           <li key={event.id} className="flex flex-col gap-1 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}
+              >
                 {eventLabels[event.type] ?? event.type}
               </span>
               <span className="text-xs text-gray-400">{formatTimestamp(event.timestamp)}</span>
             </div>
             {renderLocalEventData(event)}
-            <div className="mt-0.5 flex items-center gap-1">
-              <a
-                href={stellarExplorerUrl('tx', event.txHash, network)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-indigo-500 hover:underline font-mono truncate"
-                title={event.txHash}
-              >
-                {t('transactionHistory.dataLabels.tx')}: {truncate(event.txHash, 24)}
-              </a>
-              <CopyButton value={event.txHash} ariaLabel="Copy tx hash" className="h-3 w-3" />
-            </div>
+            <a
+              href={stellarExplorerUrl('tx', event.txHash, network)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-0.5 text-xs text-indigo-500 hover:underline font-mono"
+              title={event.txHash}
+            >
+              {t('transactionHistory.dataLabels.tx')}: {formatAddress(event.txHash)}
+            </a>
           </li>
         ))}
       </ul>

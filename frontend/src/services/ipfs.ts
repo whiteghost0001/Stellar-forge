@@ -2,28 +2,17 @@
 
 import { IPFS_CONFIG } from '../config/ipfs'
 import { withRetry, isTransientError } from '../utils/retry'
+import { IPFSConfigError, IPFSUploadError } from './ipfs-errors'
+
+export { IPFSConfigError, IPFSUploadError } from './ipfs-errors'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif']
 
-export class IPFSConfigError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'IPFSConfigError'
-  }
-}
-
-export class IPFSUploadError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'IPFSUploadError'
-  }
-}
-
 function validateConfig(): void {
   if (!IPFS_CONFIG.apiKey || !IPFS_CONFIG.apiSecret) {
     throw new IPFSConfigError(
-      'Pinata API credentials are not configured. Please set VITE_IPFS_API_KEY and VITE_IPFS_API_SECRET in your .env file.'
+      'Pinata API credentials are not configured. Please set VITE_IPFS_API_KEY and VITE_IPFS_API_SECRET in your .env file.',
     )
   }
 }
@@ -31,12 +20,12 @@ function validateConfig(): void {
 function validateImage(image: File): void {
   if (!ALLOWED_TYPES.includes(image.type)) {
     throw new IPFSUploadError(
-      `Unsupported file type "${image.type}". Only JPEG, PNG, and GIF are allowed.`
+      `Unsupported file type "${image.type}". Only JPEG, PNG, and GIF are allowed.`,
     )
   }
   if (image.size > MAX_FILE_SIZE) {
     throw new IPFSUploadError(
-      `File size ${(image.size / 1024 / 1024).toFixed(2)}MB exceeds the 5MB limit.`
+      `File size ${(image.size / 1024 / 1024).toFixed(2)}MB exceeds the 5MB limit.`,
     )
   }
 }
@@ -58,7 +47,7 @@ export class IPFSService {
     image: File,
     description: string,
     tokenName: string,
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
   ): Promise<string> {
     validateConfig()
     validateImage(image)
@@ -87,9 +76,7 @@ export class IPFSService {
    */
   async getMetadata(uri: string): Promise<Record<string, unknown>> {
     if (!uri.startsWith('ipfs://')) {
-      throw new IPFSUploadError(
-        `Invalid IPFS URI: "${uri}". Expected format: ipfs://<CID>`
-      )
+      throw new IPFSUploadError(`Invalid IPFS URI: "${uri}". Expected format: ipfs://<CID>`)
     }
 
     const cid = uri.replace('ipfs://', '')
@@ -105,13 +92,13 @@ export class IPFSService {
       })
     } catch {
       throw new IPFSUploadError(
-        'Network error while fetching metadata from IPFS gateway. Check your connection.'
+        'Network error while fetching metadata from IPFS gateway. Check your connection.',
       )
     }
 
     if (!response.ok) {
       throw new IPFSUploadError(
-        `Failed to fetch metadata (HTTP ${response.status}). The CID may not be pinned yet.`
+        `Failed to fetch metadata (HTTP ${response.status}). The CID may not be pinned yet.`,
       )
     }
 
@@ -148,14 +135,12 @@ export class IPFSService {
       xhr.addEventListener('load', () => {
         if (xhr.status === 401) {
           reject(
-            new IPFSUploadError('Pinata authentication failed. Check your API key and secret.')
+            new IPFSUploadError('Pinata authentication failed. Check your API key and secret.'),
           )
           return
         }
         if (xhr.status !== 200) {
-          reject(
-            new IPFSUploadError(`Image upload failed (HTTP ${xhr.status}). Please try again.`)
-          )
+          reject(new IPFSUploadError(`Image upload failed (HTTP ${xhr.status}). Please try again.`))
           return
         }
         try {
@@ -173,8 +158,8 @@ export class IPFSService {
       xhr.addEventListener('error', () => {
         reject(
           new IPFSUploadError(
-            'Network error during image upload. Check your connection and try again.'
-          )
+            'Network error during image upload. Check your connection and try again.',
+          ),
         )
       })
 
@@ -213,11 +198,11 @@ export class IPFSService {
             },
             body: JSON.stringify(body),
           }),
-        { shouldRetry: isTransientError }
+        { shouldRetry: isTransientError },
       )
     } catch {
       throw new IPFSUploadError(
-        'Network error during metadata upload. Check your connection and try again.'
+        'Network error during metadata upload. Check your connection and try again.',
       )
     }
 
@@ -226,7 +211,7 @@ export class IPFSService {
     }
     if (!response.ok) {
       throw new IPFSUploadError(
-        `Metadata upload failed (HTTP ${response.status}). Please try again.`
+        `Metadata upload failed (HTTP ${response.status}). Please try again.`,
       )
     }
 

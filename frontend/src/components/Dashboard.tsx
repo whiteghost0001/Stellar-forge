@@ -6,6 +6,7 @@ import { TransactionHistory } from './TransactionHistory'
 import { useDebounce } from '../hooks/useDebounce'
 import { useTokenDashboard } from '../hooks/useTokenDashboard'
 import { STELLAR_CONFIG } from '../config/stellar'
+import { formatAddress } from '../utils/formatting'
 
 function explorerUrl(address: string): string {
   const network = STELLAR_CONFIG.network as 'testnet' | 'mainnet'
@@ -39,9 +40,7 @@ export const TokenDashboard: React.FC = () => {
     if (!debouncedSearch.trim()) return rows
     const q = debouncedSearch.toLowerCase()
     return rows.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.symbol.toLowerCase().includes(q),
+      (r) => r.name.toLowerCase().includes(q) || r.symbol.toLowerCase().includes(q),
     )
   }, [rows, debouncedSearch])
 
@@ -70,15 +69,16 @@ export const TokenDashboard: React.FC = () => {
         {error && <p className="text-sm text-red-500">{error.message}</p>}
 
         <ul className="space-y-2" aria-label="Deployed tokens">
-          {isLoading
-            ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-            : filteredRows.length === 0
-            ? (
-              <li className="text-sm text-gray-500 py-4 text-center">
-                {totalCount === 0 ? 'No tokens have been deployed yet.' : 'No tokens match your search.'}
-              </li>
-            )
-            : filteredRows.map((token) => (
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+          ) : filteredRows.length === 0 ? (
+            <li className="text-sm text-gray-500 py-4 text-center">
+              {totalCount === 0
+                ? 'No tokens have been deployed yet.'
+                : 'No tokens match your search.'}
+            </li>
+          ) : (
+            filteredRows.map((token) => (
               <li
                 key={token.address}
                 className="p-3 border rounded text-sm flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors"
@@ -86,12 +86,15 @@ export const TokenDashboard: React.FC = () => {
                 <div className="min-w-0">
                   <span className="font-medium">{token.name}</span>
                   <span className="ml-2 text-gray-500 font-mono">({token.symbol})</span>
-                  <div className="text-xs text-gray-400 mt-0.5 truncate" title={token.address}>
-                    {token.address}
+                  <div
+                    className="text-xs text-gray-400 mt-0.5 font-mono truncate"
+                    title={token.address}
+                  >
+                    {formatAddress(token.address)}
                   </div>
                   {token.creator && (
-                    <div className="text-xs text-gray-400 truncate items-center gap-1" title={token.creator}>
-                      Creator: <span>{token.creator}</span> <CopyButton value={token.creator} ariaLabel="Copy creator address" />
+                    <div className="text-xs text-gray-400 font-mono truncate" title={token.creator}>
+                      Creator: {formatAddress(token.creator)}
                     </div>
                   )}
                 </div>
@@ -111,9 +114,11 @@ export const TokenDashboard: React.FC = () => {
                   </a>
                 </div>
               </li>
-            ))}
+            ))
+          )}
         </ul>
-        {!isLoading && !error && totalCount > 0 && (
+
+        {!debouncedSearch.trim() && !isLoading && totalCount > 0 && (
           <PaginationControls
             page={page}
             totalPages={totalPages}

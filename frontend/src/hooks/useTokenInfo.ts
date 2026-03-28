@@ -37,9 +37,7 @@ export interface UseTokenInfoResult {
  * Returns null while loading or when address is empty.
  */
 export function useTokenInfo(address: string): UseTokenInfoResult {
-  const [token, setToken] = useState<TokenInfo | null>(
-    () => cache.get(address)?.info ?? null,
-  )
+  const [token, setToken] = useState<TokenInfo | null>(() => cache.get(address)?.info ?? null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 

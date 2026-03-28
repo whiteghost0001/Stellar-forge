@@ -14,7 +14,9 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ isOpen, address, onClo
   useEffect(() => {
     if (!isOpen) return
     closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
@@ -36,11 +38,16 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ isOpen, address, onClo
       role="dialog"
       aria-modal="true"
       aria-labelledby="qr-modal-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-xs w-full mx-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 id="qr-modal-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2
+            id="qr-modal-title"
+            className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+          >
             Token Address QR
           </h2>
           <button
@@ -62,8 +69,12 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ isOpen, address, onClo
         </p>
 
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
-          <Button variant="primary" size="sm" onClick={handleDownload}>Download PNG</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleDownload}>
+            Download PNG
+          </Button>
         </div>
       </div>
     </div>

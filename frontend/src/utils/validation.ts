@@ -30,7 +30,12 @@ export const validateTokenParams = (params: {
     errors.symbol = 'Token symbol can only contain alphanumeric characters and hyphens'
   }
 
-  if (params.decimals === undefined || params.decimals === null || params.decimals < 0 || params.decimals > 18) {
+  if (
+    params.decimals === undefined ||
+    params.decimals === null ||
+    params.decimals < 0 ||
+    params.decimals > 18
+  ) {
     errors.decimals = 'Decimals must be 0-18'
   }
 

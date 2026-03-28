@@ -8,7 +8,12 @@ import { useWalletContext } from '../context/WalletContext'
 import { useStellarContext } from '../context/StellarContext'
 import { TokenDeployParams } from '../types'
 import { STELLAR_CONFIG } from '../config/stellar'
-import { validateTokenSymbol, validateTokenName, validateDecimals, sanitizeTokenInput } from '../utils/validation'
+import {
+  validateTokenSymbol,
+  validateTokenName,
+  validateDecimals,
+  sanitizeTokenInput,
+} from '../utils/validation'
 
 const ESTIMATED_FEE = '0.01' // XLM
 
@@ -37,17 +42,17 @@ export const TokenCreateForm: React.FC = () => {
     const sanitizedSymbol = sanitizeTokenInput(symbol)
     const sanitizedDescription = sanitizeTokenInput(description)
 
-    if (!validateTokenName(sanitizedName)) { 
-      addToast('Invalid token name: must be 1-32 characters', 'error'); 
-      return 
+    if (!validateTokenName(sanitizedName)) {
+      addToast('Invalid token name: must be 1-32 characters', 'error')
+      return
     }
-    if (!validateTokenSymbol(sanitizedSymbol)) { 
-      addToast('Invalid token symbol: must be 1-12 alphanumeric characters or hyphens', 'error'); 
-      return 
+    if (!validateTokenSymbol(sanitizedSymbol)) {
+      addToast('Invalid token symbol: must be 1-12 alphanumeric characters or hyphens', 'error')
+      return
     }
-    if (!validateDecimals(parseInt(decimals))) { 
-      addToast('Decimals must be between 0 and 18', 'error'); 
-      return 
+    if (!validateDecimals(parseInt(decimals))) {
+      addToast('Decimals must be between 0 and 18', 'error')
+      return
     }
 
     const params: TokenDeployParams = {
@@ -55,10 +60,13 @@ export const TokenCreateForm: React.FC = () => {
       symbol: sanitizedSymbol,
       decimals: parseInt(decimals),
       initialSupply,
-      salt: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+      salt:
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
       tokenWasmHash: STELLAR_CONFIG.factoryContractId, // Placeholder or actual hash
       feePayment: '100000', // Default fee
-      ...(sanitizedDescription && { metadata: { description: sanitizedDescription, image: new File([], '') } }),
+      ...(sanitizedDescription && {
+        metadata: { description: sanitizedDescription, image: new File([], '') },
+      }),
     }
 
     setPendingParams(params)
@@ -74,10 +82,14 @@ export const TokenCreateForm: React.FC = () => {
   const deployToken = async (params: TokenDeployParams) => {
     setIsDeploying(true)
     try {
-      const result = await stellarService.deployToken(params) as { success: boolean }
+      const result = (await stellarService.deployToken(params)) as { success: boolean }
       if (result.success) {
         addToast('Token deployed successfully!', 'success')
-        setName(''); setSymbol(''); setDecimals('7'); setInitialSupply(''); setDescription('')
+        setName('')
+        setSymbol('')
+        setDecimals('7')
+        setInitialSupply('')
+        setDescription('')
         // Refresh balance after successful transaction
         await refreshBalance()
       } else {
@@ -94,10 +106,37 @@ export const TokenCreateForm: React.FC = () => {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Token Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Token" required />
-        <Input label="Token Symbol" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="MTK" required />
-        <Input label="Decimals" type="number" value={decimals} onChange={(e) => setDecimals(e.target.value)} placeholder="7" min="0" max="18" required />
-        <Input label="Initial Supply" value={initialSupply} onChange={(e) => setInitialSupply(e.target.value)} placeholder="1000000" required />
+        <Input
+          label="Token Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="My Token"
+          required
+        />
+        <Input
+          label="Token Symbol"
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+          placeholder="MTK"
+          required
+        />
+        <Input
+          label="Decimals"
+          type="number"
+          value={decimals}
+          onChange={(e) => setDecimals(e.target.value)}
+          placeholder="7"
+          min="0"
+          max="18"
+          required
+        />
+        <Input
+          label="Initial Supply"
+          value={initialSupply}
+          onChange={(e) => setInitialSupply(e.target.value)}
+          placeholder="1000000"
+          required
+        />
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
             {t('tokenForm.descriptionLabel')}

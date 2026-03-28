@@ -24,7 +24,9 @@ export const LanguageSwitcher: React.FC = () => {
         className="rounded border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         {LANGUAGES.map(({ code, label }) => (
-          <option key={code} value={code}>{label}</option>
+          <option key={code} value={code}>
+            {label}
+          </option>
         ))}
       </select>
     </label>
