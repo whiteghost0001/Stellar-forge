@@ -1,213 +1,128 @@
-import { CopyButton } from './CopyButton'
-import { Button, Spinner } from './UI'
-import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useStellarContext } from '../context/StellarContext'
-import { useNetwork } from '../context/NetworkContext'
-import { stellarExplorerUrl, formatAddress } from '../utils/formatting'
-import type { ContractEvent, ContractEventType } from '../types'
 
-interface Props {
-  contractId: string
-  tokenAddress?: string
-  pageSize?: number
+import React from 'react';
+import { useTransactionHistory } from '../hooks/useTransactionHistory';
+
+interface TransactionHistoryProps {
+  publicKey: string;
+  assetCodes?: string[];
+  issuer?: string;
+  contractIds?: string[];
 }
 
-const EVENT_COLORS: Record<ContractEventType, string> = {
-  token_created: 'bg-green-100 text-green-800',
-  tokens_minted: 'bg-blue-100 text-blue-800',
-  tokens_burned: 'bg-red-100 text-red-800',
-  metadata_set: 'bg-purple-100 text-purple-800',
-  fees_updated: 'bg-yellow-100 text-yellow-800',
-}
+const badgeColors: Record<string, string> = {
+  create: 'bg-blue-100 text-blue-800',
+  mint: 'bg-green-100 text-green-800',
+  burn: 'bg-red-100 text-red-800',
+  success: 'bg-green-100 text-green-800',
+  failed: 'bg-red-100 text-red-800',
+};
 
-function formatTimestamp(unix: number): string {
-  if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
-}
-
-function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-xs text-gray-600">
-      <span className="font-medium">{label}:</span>
-      <span title={value} className="font-mono">
-        {value ? formatAddress(value) : '—'}
-      </span>
-    </span>
-  )
-}
-
-function renderEventData(event: ContractEvent) {
-  const d = event.data
-  switch (event.type) {
-    case 'token_created':
-      return (
-        <div className="flex flex-wrap gap-3">
-          <EventDataRow label="Token" value={d.tokenAddress} />
-          <EventDataRow label="Creator" value={d.creator} />
-        </div>
-      )
-    case 'tokens_minted':
-      return (
-        <div className="flex flex-wrap gap-3">
-          <EventDataRow label="Token" value={d.tokenAddress} />
-          <EventDataRow label="To" value={d.to} />
-          <EventDataRow label="Amount" value={d.amount} />
-        </div>
-      )
-    case 'tokens_burned':
-      return (
-        <div className="flex flex-wrap gap-3">
-          <EventDataRow label="Token" value={d.tokenAddress} />
-          <EventDataRow label="From" value={d.from} />
-          <EventDataRow label="Amount" value={d.amount} />
-        </div>
-      )
-    case 'metadata_set':
-      return (
-        <div className="flex flex-wrap gap-3">
-          <EventDataRow label="Token" value={d.tokenAddress} />
-          <EventDataRow label="URI" value={d.metadataUri} />
-        </div>
-      )
-    case 'fees_updated':
-      return (
-        <div className="flex flex-wrap gap-3">
-          <EventDataRow label="Base fee" value={d.baseFee} />
-          <EventDataRow label="Metadata fee" value={d.metadataFee} />
-        </div>
-      )
-  }
-}
-
-export const TransactionHistory: React.FC<Props> = ({
-  contractId,
-  tokenAddress,
-  pageSize = 20,
+export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
+  publicKey,
+  assetCodes,
+  issuer,
+  contractIds,
 }) => {
-  const { stellarService } = useStellarContext()
-  const { network } = useNetwork()
-  const { t } = useTranslation()
-  const [events, setEvents] = useState<ContractEvent[]>([])
-  const [cursor, setCursor] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(true)
+  const { transactions, loading, error, hasMore, loadMore } = useTransactionHistory(publicKey, {
+    assetCodes,
+    issuer,
+    contractIds,
+    pageSize: 10,
+  });
 
-  const filterEvents = useCallback(
-    (evts: ContractEvent[]) =>
-      tokenAddress
-        ? evts.filter(
-            (e) => e.data.tokenAddress === tokenAddress || e.data.creator === tokenAddress,
-          )
-        : evts,
-    [tokenAddress],
-  )
-
-  const fetchInitial = useCallback(async () => {
-    if (!contractId) return
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await stellarService.getContractEvents(contractId, pageSize)
-      setEvents(filterEvents(result.events))
-      setCursor(result.cursor)
-      setHasMore(result.events.length === pageSize)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('transactionHistory.loadFailed'))
-    } finally {
-      setLoading(false)
-    }
-  }, [contractId, pageSize, filterEvents, stellarService])
-
-  useEffect(() => {
-    fetchInitial()
-  }, [fetchInitial])
-
-  const loadMore = async () => {
-    if (!cursor || loadingMore) return
-    setLoadingMore(true)
-    try {
-      const result = await stellarService.getContractEvents(contractId, pageSize, cursor)
-      setEvents((prev) => [...prev, ...filterEvents(result.events)])
-      setCursor(result.cursor)
-      setHasMore(result.events.length === pageSize)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('transactionHistory.loadMoreFailed'))
-    } finally {
-      setLoadingMore(false)
-    }
-  }
-
-  const renderLocalEventData = renderEventData
-
-  if (loading)
-    return (
-      <div className="flex justify-center py-8">
-        <Spinner />
-      </div>
-    )
-
-  if (error) {
-    return (
-      <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-        {error}
-        <button onClick={fetchInitial} className="ml-2 underline hover:no-underline">
-          {t('transactionHistory.retry')}
-        </button>
-      </div>
-    )
-  }
-
-  if (events.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-gray-500">{t('transactionHistory.noEvents')}</p>
-    )
-  }
-
-  const eventLabels = t('transactionHistory.eventLabels', { returnObjects: true }) as Record<
-    ContractEventType,
-    string
-  >
+  // Infinite scroll
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+          document.documentElement.offsetHeight - 200 &&
+        hasMore &&
+        !loading
+      ) {
+        loadMore();
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loading, loadMore]);
 
   return (
-    <div className="space-y-3">
-      <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-        {events.map((event) => (
-          <li key={event.id} className="flex flex-col gap-1 px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}
-              >
-                {eventLabels[event.type] ?? event.type}
-              </span>
-              <span className="text-xs text-gray-400">{formatTimestamp(event.timestamp)}</span>
-            </div>
-            {renderLocalEventData(event)}
-            <a
-              href={stellarExplorerUrl('tx', event.txHash, network)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-0.5 text-xs text-indigo-500 hover:underline font-mono"
-              title={event.txHash}
-            >
-              {t('transactionHistory.dataLabels.tx')}: {formatAddress(event.txHash)}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button onClick={loadMore} loading={loadingMore} variant="secondary">
-            {t('transactionHistory.loadMore')}
-          </Button>
+    <div className="w-full max-w-3xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
+      {loading && transactions.length === 0 && (
+        <div className="animate-pulse space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-10 bg-gray-200 rounded" />
+          ))}
+        </div>
+      )}
+      {error && <div className="text-red-600 mb-2">{error}</div>}
+      {!loading && transactions.length === 0 && !error && (
+        <div className="text-gray-500 text-center py-8">No transactions found.</div>
+      )}
+      {transactions.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border rounded shadow">
+            <thead>
+              <tr>
+                <th className="px-4 py-2">Type</th>
+                <th className="px-4 py-2">Token</th>
+                <th className="px-4 py-2">Amount</th>
+                <th className="px-4 py-2">Date</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((tx) => (
+                <tr key={tx.id} className="border-t">
+                  <td className="px-4 py-2">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${badgeColors[tx.type] || 'bg-gray-100 text-gray-800'}`}
+                    >
+                      {tx.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">{tx.token}</td>
+                  <td className="px-4 py-2">{tx.amount}</td>
+                  <td className="px-4 py-2">{formatDate(tx.date)}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${badgeColors[tx.status] || 'bg-gray-100 text-gray-800'}`}
+                    >
+                      {tx.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <a
+                      href={`https://stellar.expert/explorer/public/tx/${tx.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      View
+                    </a>
+                  </td>
+                </tr>
+              ))}
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-4">
+                    <span className="animate-pulse text-gray-400">Loading...</span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
-  )
+  );
+};
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleString();
 }
+
+export default TransactionHistory;

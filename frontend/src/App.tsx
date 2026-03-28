@@ -2,6 +2,7 @@ import React from 'react'
 import { ToastContainer, Button, Spinner } from './components/UI'
 import './App.css'
 import { useTranslation } from 'react-i18next'
+import { useDarkMode } from './hooks/useDarkMode'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { WalletProvider } from './context/WalletContext'
 import { ToastProvider, useToast } from './context/ToastContext'
@@ -62,18 +63,27 @@ function AppContent() {
         {t('app.skipToMain')}
       </a>
 
-      <div className="min-h-screen bg-gray-100">
-        <header className="bg-white shadow" role="banner">
+<div className="min-h-screen bg-gray-100 dark:bg-slate-900">
+  <header className="bg-white/80 shadow-lg backdrop-blur-sm dark:bg-slate-800/95 dark:shadow-slate-900/50 dark:border-b dark:border-slate-700" role="banner">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{t('app.title')}</h1>
-                <p className="mt-2 text-sm text-gray-600">{t('app.subtitle')}</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('app.title')}</h1>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t('app.subtitle')}</p>
               </div>
 
               <div className="flex items-center gap-4">
                 <LanguageSwitcher />
                 <NetworkSwitcher />
+                <Button 
+                  onClick={() => setDark(!dark)} 
+                  variant="secondary" 
+                  size="sm" 
+                  className="shrink-0 p-2 rounded-full"
+                  aria-label="Toggle dark mode"
+                >
+                  {dark ? '☀️' : '🌙'}
+                </Button>
 
                 {!isInstalled && (
                   <a

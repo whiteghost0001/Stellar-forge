@@ -36,7 +36,7 @@ export const FAQ: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">{t('faq.title', 'Frequently Asked Questions')}</h1>
+"text-4xl font-bold text-gray-900 dark:text-white mb-6"
         <p className="text-xl text-gray-600 mb-8">
           {t('faq.subtitle', 'Find answers to common questions about token creation, fees, and Stellar network.')}
         </p>
@@ -46,7 +46,7 @@ export const FAQ: React.FC = () => {
             placeholder={t('faq.searchPlaceholder', 'Search FAQs...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+"w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800/50 dark:text-white"
           />
         </div>
       </div>
@@ -54,7 +54,7 @@ export const FAQ: React.FC = () => {
       <div className="space-y-4">
         {filteredFAQ.length > 0 ? (
           filteredFAQ.map((item, index) => (
-            <details key={index} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+"bg-white border border-gray-200 dark:border-slate-700 dark:bg-slate-800/50 rounded-2xl p-6 shadow-sm hover:shadow-md dark:hover:shadow-slate-900/50 transition-shadow backdrop-blur-sm"
               <summary className="font-semibold text-gray-900 text-lg cursor-pointer list-none pb-4">
                 {item.question}
               </summary>
