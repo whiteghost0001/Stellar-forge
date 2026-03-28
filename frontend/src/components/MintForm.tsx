@@ -3,13 +3,13 @@ import { Input, Button, ConfirmModal } from './UI'
 import { useDebounce } from '../hooks/useDebounce'
 import { useTos } from '../context/TosContext'
 import { useStellarContext } from '../context/StellarContext'
-import { useToast } from '../context/ToastContext'
 import { useWalletContext } from '../context/WalletContext'
-import { useFactoryState } from '../hooks/useFactoryState'
+import { useToast } from '../context/ToastContext'
 import { isValidStellarAddress } from '../utils/validation'
 import type { TokenInfo } from '../types'
 
-const ESTIMATED_FEE = '0.01' // XLM
+const BASE_FEE_STROOPS = '100000' // 0.01 XLM
+const ESTIMATED_FEE_DISPLAY = '0.01 XLM'
 const ADDRESS_DEBOUNCE_DELAY = 500
 
 interface MintFormProps {
@@ -22,25 +22,25 @@ export const MintForm: React.FC<MintFormProps> = ({
   onSuccess,
 }) => {
   const { stellarService } = useStellarContext()
-  const { addToast } = useToast()
   const { wallet } = useWalletContext()
-  const { state: factoryState } = useFactoryState()
+  const { addToast } = useToast()
+  const { requireTos } = useTos()
+
   const [tokenAddress, setTokenAddress] = useState(initialAddress)
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [pending, setPending] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [recipientHasAccount, setRecipientHasAccount] = useState<boolean | null>(null)
   const [recipientValidationError, setRecipientValidationError] = useState<string | null>(null)
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false)
-  const { requireTos } = useTos()
 
   const debouncedAddress = useDebounce(tokenAddress, ADDRESS_DEBOUNCE_DELAY)
   const debouncedRecipient = useDebounce(recipient, ADDRESS_DEBOUNCE_DELAY)
 
   useEffect(() => {
-    if (!debouncedAddress) return
+    if (!debouncedAddress) { setTokenInfo(null); return }
     stellarService
       .getTokenInfo(debouncedAddress)
       .then(setTokenInfo)
@@ -48,76 +48,60 @@ export const MintForm: React.FC<MintFormProps> = ({
   }, [debouncedAddress, stellarService])
 
   useEffect(() => {
-    const trimmedRecipient = debouncedRecipient.trim()
-
-    if (!trimmedRecipient) {
+    const trimmed = debouncedRecipient.trim()
+    if (!trimmed) {
       setRecipientHasAccount(null)
       setRecipientValidationError(null)
       setIsCheckingRecipient(false)
       return
     }
-
-    if (!isValidStellarAddress(trimmedRecipient)) {
+    if (!isValidStellarAddress(trimmed)) {
       setRecipientHasAccount(null)
       setRecipientValidationError('Enter a valid Stellar account address.')
       setIsCheckingRecipient(false)
       return
     }
-
     let cancelled = false
     setRecipientValidationError(null)
     setIsCheckingRecipient(true)
-
     stellarService
-      .accountExists(trimmedRecipient)
-      .then((exists) => {
-        if (cancelled) return
-        setRecipientHasAccount(exists)
-      })
+      .accountExists(trimmed)
+      .then((exists) => { if (!cancelled) setRecipientHasAccount(exists) })
       .catch(() => {
-        if (cancelled) return
-        setRecipientHasAccount(null)
-        setRecipientValidationError('Could not verify whether this address is funded right now.')
-      })
-      .finally(() => {
         if (!cancelled) {
-          setIsCheckingRecipient(false)
+          setRecipientHasAccount(null)
+          setRecipientValidationError('Could not verify whether this address is funded right now.')
         }
       })
-
-    return () => {
-      cancelled = true
-    }
+      .finally(() => { if (!cancelled) setIsCheckingRecipient(false) })
+    return () => { cancelled = true }
   }, [debouncedRecipient, stellarService])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!wallet.isConnected) {
-      addToast('Please connect your wallet first.', 'error')
-      return
-    }
-    if (recipientValidationError) return
+    if (!wallet.isConnected) { addToast('Connect your wallet first', 'error'); return }
     requireTos(() => setPending(true))
   }
 
   const handleConfirm = async () => {
     setPending(false)
-    setSubmitting(true)
+    setIsSubmitting(true)
     try {
-      const feePayment = factoryState?.baseFee ?? '100000'
       await stellarService.mintTokens({
         tokenAddress,
         to: recipient,
         amount,
-        feePayment,
+        feePayment: BASE_FEE_STROOPS,
       })
-      addToast('Tokens minted successfully!', 'success')
+      addToast('Tokens minted successfully', 'success')
       setAmount('')
+      setRecipient('')
+      setRecipientHasAccount(null)
       onSuccess?.()
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Minting failed. Please try again.', 'error')
+      addToast(err instanceof Error ? err.message : 'Mint failed', 'error')
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -128,8 +112,9 @@ export const MintForm: React.FC<MintFormProps> = ({
           label="Token Address"
           value={tokenAddress}
           onChange={(e) => setTokenAddress(e.target.value)}
-          placeholder="G..."
+          placeholder="C..."
           required
+          disabled={!!initialAddress}
         />
         {tokenInfo && (
           <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -165,18 +150,27 @@ export const MintForm: React.FC<MintFormProps> = ({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
-          min="0"
+          min="1"
           required
         />
-        <Button type="submit" variant="primary" disabled={submitting} className="w-full sm:w-auto">
-          {submitting ? 'Minting…' : 'Mint'}
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Estimated fee: {ESTIMATED_FEE_DISPLAY}
+        </p>
+        <Button
+          type="submit"
+          variant="primary"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          className="w-full sm:w-auto"
+        >
+          Mint Tokens
         </Button>
       </form>
 
       <ConfirmModal
         isOpen={pending}
         title="Confirm Mint"
-        description="You are about to mint tokens to the recipient address."
+        description="You are about to mint tokens to the recipient address. This action cannot be undone."
         details={[
           {
             label: 'Token',
@@ -184,7 +178,7 @@ export const MintForm: React.FC<MintFormProps> = ({
           },
           { label: 'Recipient', value: recipient },
           { label: 'Amount', value: amount },
-          { label: 'Estimated Fee', value: `${ESTIMATED_FEE} XLM` },
+          { label: 'Estimated Fee', value: ESTIMATED_FEE_DISPLAY },
         ]}
         onConfirm={handleConfirm}
         onCancel={() => setPending(false)}
