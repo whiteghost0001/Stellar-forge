@@ -83,10 +83,19 @@ export const TokenDetail: React.FC = () => {
   }, [address, stellarService])
 
   const handleSetMetadata = async (_addr: string, uri: string) => {
-    // placeholder — real impl would sign + submit a contract call
-    addToast(`Metadata URI set: ${uri}`, 'success')
-    if (token) setToken({ ...token, metadataUri: uri })
-    setActivePanel(null)
+    try {
+      const state = await stellarService.getFactoryState()
+      const hash = await stellarService.setMetadata({
+        tokenAddress: address!,
+        metadataUri: uri,
+        feePayment: state.metadataFee,
+      })
+      addToast(`Metadata set — tx: ${hash}`, 'success')
+      if (token) setToken({ ...token, metadataUri: uri })
+      setActivePanel(null)
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to set metadata', 'error')
+    }
   }
 
   const togglePanel = (panel: ActivePanel) =>
