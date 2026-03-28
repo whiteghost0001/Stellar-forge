@@ -10,7 +10,9 @@ export const NavBar: React.FC<NavBarProps> = ({ onHelpClick }) => {
 
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center ${
-      isActive ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'
+      isActive
+        ? 'bg-blue-600 text-white'
+        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
     }`
 
   return (
@@ -34,7 +36,7 @@ export const NavBar: React.FC<NavBarProps> = ({ onHelpClick }) => {
         {onHelpClick && (
           <button
             onClick={onHelpClick}
-            className="px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-200 ml-auto"
+            className="px-3 py-2 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 ml-auto"
             aria-label="Open tutorial"
           >
             ? Help
