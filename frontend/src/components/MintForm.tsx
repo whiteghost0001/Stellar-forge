@@ -135,12 +135,12 @@ export const MintForm: React.FC<MintFormProps> = ({
           required
         />
         {isCheckingRecipient && !recipientValidationError && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-500 dark:text-gray-400" aria-live="polite">
             Checking whether the recipient account is funded...
           </p>
         )}
         {recipientHasAccount === false && !recipientValidationError && (
-          <p className="text-sm text-amber-600 dark:text-amber-400" role="status">
+          <p className="text-sm text-amber-600 dark:text-amber-400" role="status" aria-live="polite">
             This address does not have a Stellar account yet. It may need to be funded first.
           </p>
         )}
