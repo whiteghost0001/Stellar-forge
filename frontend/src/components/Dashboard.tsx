@@ -21,7 +21,7 @@ function SkeletonRow() {
   return (
     <li className="p-3 border rounded animate-pulse flex items-center justify-between gap-2">
       <div className="space-y-1.5 flex-1">
-        <div className="h-4 bg-gray-200 rounded w-1/3" />
+"h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/3"
         <div className="h-3 bg-gray-200 rounded w-1/2" />
       </div>
       <div className="h-3 bg-gray-200 rounded w-20" />
@@ -59,7 +59,7 @@ export const TokenDashboard: React.FC = () => {
           <button
             onClick={refresh}
             disabled={isLoading}
-            className="mt-6 px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-40 transition-colors shrink-0"
+"mt-6 px-3 py-2 text-sm rounded border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors shrink-0"
             aria-label="Refresh token list"
           >
             ↻ Refresh
@@ -81,7 +81,7 @@ export const TokenDashboard: React.FC = () => {
             filteredRows.map((token) => (
               <li
                 key={token.address}
-                className="p-3 border rounded text-sm flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors"
+"p-3 border rounded text-sm flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors dark:bg-slate-800 dark:border-slate-700"
               >
                 <div className="min-w-0">
                   <span className="font-medium">{token.name}</span>

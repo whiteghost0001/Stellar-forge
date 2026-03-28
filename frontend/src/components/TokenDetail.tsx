@@ -184,7 +184,8 @@ export const TokenDetail: React.FC = () => {
         )}
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+"text-2xl font-bold text-gray-900 dark:text-white"
+
           {token.name}
           <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">
             ({token.symbol})
