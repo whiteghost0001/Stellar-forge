@@ -605,8 +605,8 @@ fn test_get_tokens_by_creator() {
 
     let indices = s.client.get_tokens_by_creator(&creator);
     assert_eq!(indices.len(), 2);
-    assert_eq!(indices.get(0).unwrap(), 1);
-    assert_eq!(indices.get(1).unwrap(), 2);
+    assert_eq!(indices.get(0).expect("first token index missing"), 1);
+    assert_eq!(indices.get(1).expect("second token index missing"), 2);
 }
 
 #[test]

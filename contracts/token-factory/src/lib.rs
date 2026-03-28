@@ -1,5 +1,8 @@
 #![no_std]
-#![deny(clippy::all)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![cfg_attr(not(test), deny(clippy::expect_used))]
+#![cfg_attr(not(test), deny(clippy::panic))]
+#![cfg_attr(not(test), deny(clippy::arithmetic_side_effects))]
 
 use soroban_sdk::{
     contract, contractimpl, contracttype, contracterror, contractclient,
@@ -62,6 +65,8 @@ pub enum Error {
     Reentrancy = 11,
     /// Integer overflow error during arithmetic operations (fee calculation, token count, etc.)
     ArithmeticOverflow = 12,
+    /// Storage read failed - contract state not found
+    StateNotFound = 13,
 }
 
 #[contract]
@@ -96,8 +101,8 @@ impl TokenFactory {
         Ok(())
     }
 
-    fn load_state(env: &Env) -> FactoryState {
-        env.storage().instance().get(&symbol_short!("state")).unwrap()
+    fn load_state(env: &Env) -> Result<FactoryState, Error> {
+        env.storage().instance().get(&symbol_short!("state")).ok_or(Error::StateNotFound)
     }
 
     fn save_state(env: &Env, state: &FactoryState) {
@@ -105,7 +110,7 @@ impl TokenFactory {
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
-        if Self::load_state(env).paused {
+        if Self::load_state(env)?.paused {
             return Err(Error::ContractPaused);
         }
         Ok(())
@@ -127,7 +132,7 @@ impl TokenFactory {
         Self::require_not_paused(&env)?;
         creator.require_auth();
 
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env)?;
 
         // Reentrancy guard: reject if a create_token call is already in progress.
         if state.locked {
@@ -159,12 +164,12 @@ impl TokenFactory {
     ) -> Result<Address, Error> {
         // Validate token name: non-empty and at most 32 characters
         if name.len() == 0 || name.len() > 32 {
-            return Err(Error::InvalidTokenParams);
+            return Err(Error::InvalidParameters);
         }
 
         // Validate token symbol: non-empty and at most 12 characters
         if symbol.len() == 0 || symbol.len() > 12 {
-            return Err(Error::InvalidTokenParams);
+            return Err(Error::InvalidParameters);
         }
 
         if fee_payment < state.base_fee {
@@ -239,7 +244,7 @@ impl TokenFactory {
         Self::require_not_paused(&env)?;
         admin.require_auth();
 
-        let state = Self::load_state(&env);
+        let state = Self::load_state(&env)?;
 
         if fee_payment < state.metadata_fee {
             return Err(Error::InsufficientFee);
@@ -300,7 +305,7 @@ impl TokenFactory {
             return Err(Error::InvalidParameters);
         }
 
-        let state = Self::load_state(&env);
+        let state = Self::load_state(&env)?;
 
         if fee_payment < state.base_fee {
             return Err(Error::InsufficientFee);
@@ -359,7 +364,7 @@ impl TokenFactory {
         // Check burn_enabled via reverse index lookup before burning
         let idx_key = (&token_address, symbol_short!("idx"));
         if let Some(index) = env.storage().instance().get::<_, u32>(&idx_key) {
-            let info: TokenInfo = env.storage().instance().get(&index).unwrap();
+            let info: TokenInfo = env.storage().instance().get(&index).ok_or(Error::TokenNotFound)?;
             if !info.burn_enabled {
                 return Err(Error::BurnNotEnabled);
             }
@@ -388,7 +393,7 @@ impl TokenFactory {
             .get(&idx_key)
             .ok_or(Error::TokenNotFound)?;
 
-        let mut info: TokenInfo = env.storage().instance().get(&index).unwrap();
+        let mut info: TokenInfo = env.storage().instance().get(&index).ok_or(Error::TokenNotFound)?;
 
         if info.creator != admin {
             return Err(Error::Unauthorized);
@@ -401,7 +406,7 @@ impl TokenFactory {
 
     pub fn pause(env: Env, admin: Address) -> Result<(), Error> {
         admin.require_auth();
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env)?;
         if state.admin != admin {
             return Err(Error::Unauthorized);
         }
@@ -412,7 +417,7 @@ impl TokenFactory {
 
     pub fn unpause(env: Env, admin: Address) -> Result<(), Error> {
         admin.require_auth();
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env)?;
         if state.admin != admin {
             return Err(Error::Unauthorized);
         }
@@ -428,7 +433,7 @@ impl TokenFactory {
         metadata_fee: Option<i128>,
     ) -> Result<(), Error> {
         admin.require_auth();
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env)?;
         if admin != state.admin {
             return Err(Error::Unauthorized);
         }
@@ -448,7 +453,7 @@ impl TokenFactory {
     /// Contract state is preserved; call `migrate()` afterwards if state layout changes.
     pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
         admin.require_auth();
-        let state = Self::load_state(&env);
+        let state = Self::load_state(&env)?;
         if state.admin != admin {
             return Err(Error::Unauthorized);
         }
@@ -465,7 +470,7 @@ impl TokenFactory {
 
     pub fn transfer_admin(env: Env, admin: Address, new_admin: Address) -> Result<(), Error> {
         admin.require_auth();
-        let mut state = Self::load_state(&env);
+        let mut state = Self::load_state(&env)?;
         if state.admin != admin {
             return Err(Error::Unauthorized);
         }
@@ -477,16 +482,16 @@ impl TokenFactory {
         Ok(())
     }
 
-    pub fn get_state(env: Env) -> FactoryState {
+    pub fn get_state(env: Env) -> Result<FactoryState, Error> {
         Self::load_state(&env)
     }
 
-    pub fn get_base_fee(env: Env) -> i128 {
-        Self::load_state(&env).base_fee
+    pub fn get_base_fee(env: Env) -> Result<i128, Error> {
+        Ok(Self::load_state(&env)?.base_fee)
     }
 
-    pub fn get_metadata_fee(env: Env) -> i128 {
-        Self::load_state(&env).metadata_fee
+    pub fn get_metadata_fee(env: Env) -> Result<i128, Error> {
+        Ok(Self::load_state(&env)?.metadata_fee)
     }
 
     pub fn get_token_info(env: Env, index: u32) -> Result<TokenInfo, Error> {
