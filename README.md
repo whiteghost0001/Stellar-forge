@@ -68,13 +68,20 @@ npm install
 ```
 
 ### 4. Environment Variables
-Create a `.env` file in the `frontend` directory:
+Copy the example env file and fill in your values:
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Then edit `frontend/.env`:
 ```env
 VITE_NETWORK=testnet
 VITE_FACTORY_CONTRACT_ID=<deployed-contract-id>
 VITE_IPFS_API_KEY=<pinata-api-key>
 VITE_IPFS_API_SECRET=<pinata-api-secret>
 ```
+
+> **Note:** `VITE_FACTORY_CONTRACT_ID`, `VITE_IPFS_API_KEY`, and `VITE_IPFS_API_SECRET` are required. The app will display a misconfiguration screen if any of these are missing, rather than failing silently at runtime.
 
 ## Building & Testing
 
