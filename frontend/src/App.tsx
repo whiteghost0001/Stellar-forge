@@ -24,7 +24,21 @@ import { FAQ } from './components/FAQ'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+/** Bridges window-level unhandledrejection events (fired from main.tsx) into toasts. */
+function ToastBridge() {
+  const { addToast } = useToast()
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const msg = (e as CustomEvent<string>).detail
+      if (msg) addToast(msg, 'error')
+    }
+    window.addEventListener('app:unhandled-error', handler)
+    return () => window.removeEventListener('app:unhandled-error', handler)
+  }, [addToast])
+  return null
+}
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { wallet } = useWallet()
@@ -252,6 +266,7 @@ function App() {
             <WalletProvider>
               <ToastProvider>
                 <TosProvider>
+                  <ToastBridge />
                   <AppContent />
                 </TosProvider>
               </ToastProvider>
