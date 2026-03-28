@@ -3,7 +3,8 @@ import React from 'react';
 import { useTransactionHistory } from '../hooks/useTransactionHistory';
 
 interface TransactionHistoryProps {
-  publicKey: string;
+  publicKey?: string;
+  contractId?: string;
   assetCodes?: string[];
   issuer?: string;
   contractIds?: string[];
@@ -18,15 +19,17 @@ const badgeColors: Record<string, string> = {
 };
 
 export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
-  publicKey,
+  publicKey = '',
+  contractId,
   assetCodes,
   issuer,
   contractIds,
 }) => {
+  const resolvedContractIds = contractId ? [contractId, ...(contractIds ?? [])] : contractIds
   const { transactions, loading, error, hasMore, loadMore } = useTransactionHistory(publicKey, {
     assetCodes,
     issuer,
-    contractIds,
+    contractIds: resolvedContractIds,
     pageSize: 10,
   });
 
@@ -50,7 +53,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     <div className="w-full max-w-3xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
       {loading && transactions.length === 0 && (
-        <div className="animate-pulse space-y-2">
+        <div className="animate-pulse space-y-2" aria-label="Loading transactions" aria-busy="true">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-10 bg-gray-200 rounded" />
           ))}
@@ -63,14 +66,15 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       {transactions.length > 0 && (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border rounded shadow">
+            <caption className="sr-only">Transaction history</caption>
             <thead>
               <tr>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Token</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Link</th>
+                <th scope="col" className="px-4 py-2">Type</th>
+                <th scope="col" className="px-4 py-2">Token</th>
+                <th scope="col" className="px-4 py-2">Amount</th>
+                <th scope="col" className="px-4 py-2">Date</th>
+                <th scope="col" className="px-4 py-2">Status</th>
+                <th scope="col" className="px-4 py-2">Link</th>
               </tr>
             </thead>
             <tbody>
@@ -99,6 +103,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 underline"
+                      aria-label={`View transaction ${tx.hash} on Stellar Explorer`}
                     >
                       View
                     </a>

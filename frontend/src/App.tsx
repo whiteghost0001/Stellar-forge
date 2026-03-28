@@ -39,6 +39,7 @@ function AppContent() {
   const { wallet, connect, disconnect, isConnecting, error, isInstalled } = useWallet()
   const { addToast } = useToast()
   const { t } = useTranslation()
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const { state: factoryState } = useFactoryState()
 
@@ -99,13 +100,13 @@ function AppContent() {
                 <LanguageSwitcher />
                 <NetworkSwitcher />
                 <Button 
-                  onClick={() => setDark(!dark)} 
+                  onClick={toggleDarkMode} 
                   variant="secondary" 
                   size="sm" 
                   className="shrink-0 p-2 rounded-full"
-                  aria-label="Toggle dark mode"
+                  aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
-                  {dark ? '☀️' : '🌙'}
+                  {isDarkMode ? '☀️' : '🌙'}
                 </Button>
 
                 {!isInstalled && (
