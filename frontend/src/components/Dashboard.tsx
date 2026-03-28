@@ -94,3 +94,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ tokens }) => {
     </div>
   )
 }
+
+export const Dashboard = TokenDashboard
+
