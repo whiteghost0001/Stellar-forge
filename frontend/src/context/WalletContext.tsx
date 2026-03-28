@@ -43,8 +43,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const balance = await walletService.getBalance(address, network)
       setWallet((prev: WalletState) => ({ ...prev, balance }))
-    } catch (err) {
-      console.error('Failed to fetch balance:', err)
+    } catch {
+      // Balance fetch failure is non-critical; wallet remains connected
     }
   }
 
@@ -84,8 +84,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setWallet({ address, isConnected: true, balance: undefined })
           await fetchBalance(address)
         }
-      } catch (err) {
-        console.error('Failed to check existing connection:', err)
+      } catch {
+        // Existing connection check failed silently; user can connect manually
       }
     }
 

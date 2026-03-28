@@ -757,6 +757,36 @@ export class StellarService {
     return { events, cursor: lastEvent?.pagingToken ?? null }
   }
 
+  async updateFees(params: { baseFee: string; metadataFee: string }): Promise<string> {
+    try {
+      const contractId = STELLAR_CONFIG.factoryContractId
+      if (!contractId) throw new Error('Factory contract ID is not configured')
+
+      const sourceAddress = walletService.getConnectedAddress()
+      if (!sourceAddress) throw new Error('Wallet not connected')
+
+      const server = getRpcServer(this.network)
+      const contract = new Contract(contractId)
+
+      const txBuilder = await buildTxBuilder(server, sourceAddress, this.network)
+      const tx = txBuilder
+        .addOperation(
+          contract.call(
+            'update_fees',
+            new Address(sourceAddress).toScVal(),
+            nativeToScVal(BigInt(params.baseFee), { type: 'i128' }),
+            nativeToScVal(BigInt(params.metadataFee), { type: 'i128' }),
+          ),
+        )
+        .setTimeout(30)
+        .build()
+
+      return await simulateAndSubmit(server, tx, this.network)
+    } catch (err) {
+      throw parseContractError(err)
+    }
+  }
+
   async getAllTokens(): Promise<TokenInfo[]> {
     return []
   }
