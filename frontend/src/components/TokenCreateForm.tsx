@@ -1,4 +1,13 @@
 import { useState } from 'react'
+import { Input } from './UI/Input'
+import { Button } from './UI/Button'
+import { MainnetConfirmationModal } from './UI/MainnetConfirmationModal'
+import { ShareButton } from './ShareButton'
+import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
+import { useToast } from '../context/ToastContext'
+import { stellarService } from '../services/stellar'
+import { TokenDeployParams, DeploymentResult } from '../types'
+import { validateTokenSymbol, validateTokenName, validateDecimals } from '../utils/validation'
 import { useTranslation } from 'react-i18next'
 import { Input, Button, MainnetConfirmationModal, ConfirmModal } from './UI'
 import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
@@ -26,6 +35,7 @@ export const TokenCreateForm: React.FC = () => {
   const [initialSupply, setInitialSupply] = useState('')
   const [description, setDescription] = useState('')
   const [isDeploying, setIsDeploying] = useState(false)
+  const [deployedToken, setDeployedToken] = useState<{ address: string; name: string; symbol: string } | null>(null)
   const [pendingParams, setPendingParams] = useState<TokenDeployParams | null>(null)
 
   const { showModal, tokenParams, requestDeployment, closeModal, confirmDeployment } =
@@ -105,6 +115,29 @@ export const TokenCreateForm: React.FC = () => {
 
   return (
     <>
+      {deployedToken && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl" aria-hidden="true">🎉</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-green-800 dark:text-green-300">
+                {deployedToken.name} (${deployedToken.symbol}) deployed successfully!
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-400 mt-1 font-mono break-all">
+                {deployedToken.address}
+              </p>
+              <div className="mt-3">
+                <ShareButton
+                  tokenAddress={deployedToken.address}
+                  tokenName={deployedToken.name}
+                  tokenSymbol={deployedToken.symbol}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Token Name"
