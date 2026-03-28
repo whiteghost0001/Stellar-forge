@@ -6,6 +6,7 @@ import { useNetwork } from '../context/NetworkContext'
 import { stellarExplorerUrl, ipfsToGatewayUrl } from '../utils/formatting'
 import { isValidContractAddress } from '../utils/validation'
 import type { TokenInfo, IPFSMetadata } from '../types'
+import { CopyButton } from './CopyButton'
 import { Card } from './UI/Card'
 import { Button } from './UI/Button'
 import { Spinner } from './UI/Spinner'
@@ -114,15 +115,16 @@ export const TokenDetail: React.FC = () => {
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Address</dt>
-            <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
+            <dd className="flex items-center gap-1 font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
               <a
                 href={stellarExplorerUrl('contract', address!, network)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-500 hover:underline"
+                className="text-indigo-500 hover:underline truncate"
               >
                 {address}
               </a>
+              <CopyButton value={address!} ariaLabel="Copy token address" />
             </dd>
           </div>
           <div>
@@ -135,16 +137,19 @@ export const TokenDetail: React.FC = () => {
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Creator</dt>
-            <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
+            <dd className="flex items-center gap-1 font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
               {token.creator ? (
-                <a
-                  href={stellarExplorerUrl('account', token.creator, network)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-500 hover:underline"
-                >
-                  {token.creator}
-                </a>
+                <>
+                  <a
+                    href={stellarExplorerUrl('account', token.creator, network)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-500 hover:underline truncate"
+                  >
+                    {token.creator}
+                  </a>
+                  <CopyButton value={token.creator} ariaLabel="Copy creator address" />
+                </>
               ) : '—'}
             </dd>
           </div>
@@ -157,8 +162,9 @@ export const TokenDetail: React.FC = () => {
           {token.metadataUri && (
             <div className="sm:col-span-2">
               <dt className="text-gray-500 dark:text-gray-400">Metadata URI</dt>
-              <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
-                {token.metadataUri}
+              <dd className="flex items-center gap-1 font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
+                <span className="truncate" title={token.metadataUri}>{token.metadataUri}</span>
+                <CopyButton value={token.metadataUri} ariaLabel="Copy metadata URI" />
               </dd>
             </div>
           )}

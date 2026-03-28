@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CopyButton } from './CopyButton'
 import { Input, PaginationControls } from './UI'
 import { TransactionHistory } from './TransactionHistory'
 import { useDebounce } from '../hooks/useDebounce'
@@ -89,54 +90,30 @@ export const TokenDashboard: React.FC = () => {
                     {token.address}
                   </div>
                   {token.creator && (
-                    <div className="text-xs text-gray-400 truncate" title={token.creator}>
-                      Creator: {token.creator}
+                    <div className="text-xs text-gray-400 truncate items-center gap-1" title={token.creator}>
+                      Creator: <span>{token.creator}</span> <CopyButton value={token.creator} ariaLabel="Copy creator address" />
                     </div>
                   )}
                 </div>
-                <a
-                  href={explorerUrl(token.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:underline shrink-0"
-                  aria-label={`View ${token.name} on Stellar Explorer`}
-                >
-                  Explorer ↗
-                </a>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-blue-500 hover:underline shrink-0 truncate max-w-[100px]" title={token.address} aria-label={`View ${token.name} on Stellar Explorer`}>
+                    {token.address}
+                  </span>
+                  <CopyButton value={token.address} ariaLabel="Copy token address" />
+                  <a
+                    href={explorerUrl(token.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:underline shrink-0"
+                    aria-label={`View ${token.name} on Stellar Explorer`}
+                  >
+                    ↗
+                  </a>
+                </div>
               </li>
             ))}
         </ul>
-        {!isLoading && !error && (
-          <>
-            <ul className="space-y-2">
-              {filteredTokens.length === 0 ? (
-                <li className="text-sm text-gray-500">No tokens found.</li>
-              ) : (
-                filteredTokens.map((token, i) => (
-                  <li
-                    key={token.creator + i}
-                    className="p-3 sm:p-4 border rounded text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-                  >
-                    <div className="min-w-0">
-                      <span className="font-medium">{token.name}</span>
-                      <span className="ml-2 text-gray-500">({token.symbol})</span>
-                      <div className="text-xs text-gray-400 mt-0.5 truncate">
-                        Created: {formatCreationDate(token.createdAt)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => copy(token.creator)}
-                      className="text-xs text-blue-500 hover:underline shrink-0 min-h-[44px] min-w-[44px] flex items-center sm:justify-end"
-                      aria-label={`Copy address for ${token.name}`}
-                    >
-                      {copied ? 'Copied!' : 'Copy address'}
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-
-        {!debouncedSearch.trim() && !isLoading && totalCount > 0 && (
+        {!isLoading && !error && totalCount > 0 && (
           <PaginationControls
             page={page}
             totalPages={totalPages}
@@ -159,3 +136,4 @@ export const TokenDashboard: React.FC = () => {
 }
 
 export const Dashboard = TokenDashboard
+

@@ -1,3 +1,4 @@
+import { CopyButton } from './CopyButton'
 import { Button, Spinner } from './UI'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -32,9 +33,14 @@ function truncate(str: string, len = 12): string {
 
 function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
   return (
-    <span className="inline-flex gap-1 text-xs text-gray-600">
+    <span className="inline-flex items-center gap-1 text-xs text-gray-600">
       <span className="font-medium">{label}:</span>
-      <span title={value} className="font-mono">{value ? truncate(value, 20) : '—'}</span>
+      {value ? (
+        <>
+          <span title={value} className="font-mono">{truncate(value, 20)}</span>
+          <CopyButton value={value} ariaLabel={`Copy ${label.toLowerCase()}`} className="h-3 w-3" />
+        </>
+      ) : '—'}
     </span>
   )
 }
@@ -170,15 +176,18 @@ export const TransactionHistory: React.FC<Props> = ({
               <span className="text-xs text-gray-400">{formatTimestamp(event.timestamp)}</span>
             </div>
             {renderLocalEventData(event)}
-            <a
-              href={stellarExplorerUrl('tx', event.txHash, network)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-0.5 text-xs text-indigo-500 hover:underline font-mono"
-              title={event.txHash}
-            >
-              {t('transactionHistory.dataLabels.tx')}: {truncate(event.txHash, 24)}
-            </a>
+            <div className="mt-0.5 flex items-center gap-1">
+              <a
+                href={stellarExplorerUrl('tx', event.txHash, network)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-indigo-500 hover:underline font-mono truncate"
+                title={event.txHash}
+              >
+                {t('transactionHistory.dataLabels.tx')}: {truncate(event.txHash, 24)}
+              </a>
+              <CopyButton value={event.txHash} ariaLabel="Copy tx hash" className="h-3 w-3" />
+            </div>
           </li>
         ))}
       </ul>
