@@ -3,13 +3,12 @@ import { useParams, Link } from 'react-router-dom'
 import { useStellarContext } from '../context/StellarContext'
 import { useNetwork } from '../context/NetworkContext'
 import { useToast } from '../context/ToastContext'
+import { useWallet } from '../hooks/useWallet'
 import { ipfsService } from '../services/ipfs'
 import { stellarExplorerUrl, ipfsToGatewayUrl, formatAddress } from '../utils/formatting'
 import { isValidContractAddress } from '../utils/validation'
 import type { TokenInfo, IPFSMetadata } from '../types'
-import { Card } from './UI/Card'
-import { Button } from './UI/Button'
-import { Spinner } from './UI/Spinner'
+import { Card, Button, Spinner } from './UI'
 import { CopyButton } from './CopyButton'
 import { QRCodeModal } from './UI/QRCodeModal'
 import { ShareButton } from './ShareButton'
@@ -40,6 +39,7 @@ export const TokenDetail: React.FC = () => {
   const { address } = useParams<{ address: string }>()
   const { addToast } = useToast()
   const { network } = useNetwork()
+  const { wallet } = useWallet()
 
   const [token, setToken] = useState<TokenInfo | null>(null)
   const [metadata, setMetadata] = useState<IPFSMetadata | null>(null)
@@ -47,6 +47,8 @@ export const TokenDetail: React.FC = () => {
   const [notFound, setNotFound] = useState(false)
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
   const [showQR, setShowQR] = useState(false)
+
+  const isCreator = token?.creator && wallet.address && token.creator === wallet.address
 
   useEffect(() => {
     if (!address || !isValidContractAddress(address)) {
@@ -243,16 +245,24 @@ export const TokenDetail: React.FC = () => {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => togglePanel('mint')} variant="primary">
-          {activePanel === 'mint' ? 'Cancel Mint' : 'Mint More'}
-        </Button>
-        <Button onClick={() => togglePanel('burn')} variant="secondary">
-          {activePanel === 'burn' ? 'Cancel Burn' : 'Burn Tokens'}
-        </Button>
-        {!token.metadataUri && (
-          <Button onClick={() => togglePanel('metadata')} variant="outline">
-            {activePanel === 'metadata' ? 'Cancel' : 'Set Metadata'}
-          </Button>
+        {isCreator ? (
+          <>
+            <Button onClick={() => togglePanel('mint')} variant="primary">
+              {activePanel === 'mint' ? 'Cancel Mint' : 'Mint More'}
+            </Button>
+            <Button onClick={() => togglePanel('burn')} variant="secondary">
+              {activePanel === 'burn' ? 'Cancel Burn' : 'Burn Tokens'}
+            </Button>
+            {!token.metadataUri && (
+              <Button onClick={() => togglePanel('metadata')} variant="outline">
+                {activePanel === 'metadata' ? 'Cancel' : 'Set Metadata'}
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400 py-2">
+            Only the token creator can perform actions on this token.
+          </div>
         )}
         <Button onClick={() => setShowQR(true)} variant="outline">
           Show QR
@@ -261,21 +271,25 @@ export const TokenDetail: React.FC = () => {
 
       <QRCodeModal isOpen={showQR} address={address!} onClose={() => setShowQR(false)} />
 
-      {/* Inline action panels */}
-      {activePanel === 'mint' && address && (
-        <Card title="Mint More Tokens">
-          <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
-        </Card>
-      )}
-      {activePanel === 'burn' && address && (
-        <Card title="Burn Tokens">
-          <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
-        </Card>
-      )}
-      {activePanel === 'metadata' && address && (
-        <Card title="Set Metadata">
-          <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
-        </Card>
+      {/* Inline action panels - only for creator */}
+      {isCreator && (
+        <>
+          {activePanel === 'mint' && address && (
+            <Card title="Mint More Tokens">
+              <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
+            </Card>
+          )}
+          {activePanel === 'burn' && address && (
+            <Card title="Burn Tokens">
+              <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
+            </Card>
+          )}
+          {activePanel === 'metadata' && address && (
+            <Card title="Set Metadata">
+              <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
+            </Card>
+          )}
+        </>
       )}
     </div>
   )

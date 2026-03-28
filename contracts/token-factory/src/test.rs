@@ -588,7 +588,34 @@ fn test_initial_state_is_not_locked() {
     });
 }
 
-// ── get_tokens_by_creator ─────────────────────────────────────────────────────
+// ── TTL ───────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_ttl_extended_after_initialize() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, TokenFactory);
+    let client = TokenFactoryClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    let fee_token = env.register_stellar_asset_contract_v2(admin.clone()).address();
+
+    client.initialize(&admin, &treasury, &fee_token, &1_000, &500);
+
+    // After initialize the instance TTL must be at least MIN_TTL ledgers.
+    // The test env starts at ledger 0; extend_ttl(100_000, 535_000) sets the
+    // live-until ledger to 535_000, so the TTL is 535_000 - current = 535_000.
+    env.as_contract(&contract_id, || {
+        let ttl = env.storage().instance().get_ttl();
+        assert!(
+            ttl >= super::MIN_TTL,
+            "instance TTL after initialize ({ttl}) must be >= MIN_TTL ({})",
+            super::MIN_TTL,
+        );
+    });
+}
 
 #[test]
 fn test_get_tokens_by_creator() {

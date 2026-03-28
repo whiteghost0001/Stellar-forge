@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { CopyButton } from './CopyButton'
 import { Input, PaginationControls } from './UI'
 import { TransactionHistory } from './TransactionHistory'
@@ -83,7 +84,11 @@ export const TokenDashboard: React.FC = () => {
                 key={token.address}
                 className="p-3 border rounded text-sm flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors dark:bg-slate-800 dark:border-slate-700"
               >
-                <div className="min-w-0">
+                <Link
+                  to={`/tokens/${token.address}`}
+                  className="flex-1 min-w-0 hover:underline"
+                  title={`View ${token.name} details`}
+                >
                   <span className="font-medium">{token.name}</span>
                   <span className="ml-2 text-gray-500 font-mono">({token.symbol})</span>
                   <div
@@ -97,14 +102,14 @@ export const TokenDashboard: React.FC = () => {
                       Creator: {formatAddress(token.creator)}
                     </div>
                   )}
-                </div>
-                <div className="flex items-center gap-1">
+                </Link>
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <CopyButton value={token.address} ariaLabel="Copy token address" />
                   <a
                     href={explorerUrl(token.address)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline shrink-0"
+                    className="text-xs text-blue-500 hover:underline"
                     aria-label={`View ${token.name} on Stellar Explorer`}
                   >
                     ↗

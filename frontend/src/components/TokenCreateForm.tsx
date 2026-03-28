@@ -1,15 +1,6 @@
 import { useState } from 'react'
-import { Input } from './UI/Input'
-import { Button } from './UI/Button'
-import { MainnetConfirmationModal } from './UI/MainnetConfirmationModal'
-import { ShareButton } from './ShareButton'
-import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
-import { useToast } from '../context/ToastContext'
-import { stellarService } from '../services/stellar'
-import { TokenDeployParams, DeploymentResult } from '../types'
-import { validateTokenSymbol, validateTokenName, validateDecimals } from '../utils/validation'
-import { useTranslation } from 'react-i18next'
-import { Input, Button, MainnetConfirmationModal, ConfirmModal } from './UI'
+import { Input, Button, MainnetConfirmationModal, ConfirmModal, ProgressIndicator } from './UI'
+import type { ProgressStep } from './UI'
 import { useMainnetConfirmation } from '../hooks/useMainnetConfirmation'
 import { useToast } from '../context/ToastContext'
 import { useTos } from '../context/TosContext'
@@ -23,6 +14,8 @@ import {
   validateDecimals,
   sanitizeTokenInput,
 } from '../utils/validation'
+import { ShareButton } from './ShareButton'
+import { useTranslation } from 'react-i18next'
 
 const ESTIMATED_FEE = '0.01' // XLM
 
@@ -37,12 +30,25 @@ export const TokenCreateForm: React.FC = () => {
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedToken, setDeployedToken] = useState<{ address: string; name: string; symbol: string } | null>(null)
   const [pendingParams, setPendingParams] = useState<TokenDeployParams | null>(null)
+  const [deploymentSteps, setDeploymentSteps] = useState<ProgressStep[]>([
+    { label: 'Deploy contract', status: 'pending' },
+    { label: 'Upload metadata to IPFS', status: 'pending' },
+    { label: 'Set metadata on-chain', status: 'pending' },
+  ])
 
   const { showModal, tokenParams, requestDeployment, closeModal, confirmDeployment } =
     useMainnetConfirmation()
   const { addToast } = useToast()
   const { requireTos } = useTos()
   const { t } = useTranslation()
+
+  const updateStep = (index: number, status: ProgressStep['status']) => {
+    setDeploymentSteps((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], status }
+      return updated
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +59,7 @@ export const TokenCreateForm: React.FC = () => {
     const sanitizedDescription = sanitizeTokenInput(description)
 
     if (!validateTokenName(sanitizedName)) {
-      addToast('Invalid token name: must be 1-32 characters', 'error')
+      addToast('Invalid token name: must be 1-32 characters using only letters, digits, spaces, hyphens, and underscores', 'error')
       return
     }
     if (!validateTokenSymbol(sanitizedSymbol)) {
@@ -91,9 +97,18 @@ export const TokenCreateForm: React.FC = () => {
 
   const deployToken = async (params: TokenDeployParams) => {
     setIsDeploying(true)
+    setDeploymentSteps([
+      { label: 'Deploy contract', status: 'in-progress' },
+      { label: 'Upload metadata to IPFS', status: 'pending' },
+      { label: 'Set metadata on-chain', status: 'pending' },
+    ])
+
     try {
       const result = (await stellarService.deployToken(params)) as { success: boolean }
       if (result.success) {
+        updateStep(0, 'completed')
+        updateStep(1, 'completed')
+        updateStep(2, 'completed')
         addToast('Token deployed successfully!', 'success')
         setName('')
         setSymbol('')
@@ -103,11 +118,26 @@ export const TokenCreateForm: React.FC = () => {
         // Refresh balance after successful transaction
         await refreshBalance()
       } else {
+        updateStep(0, 'error')
         addToast(t('tokenForm.deployFailed'), 'error')
       }
     } catch (error: unknown) {
       console.error('Deployment error:', error)
+      updateStep(0, 'error')
       addToast(t('tokenForm.deployError'), 'error')
+    } finally {
+      setIsDeploying(false)
+    }
+  }
+        setInitialSupply('')
+        setDescription('')
+        // Refresh balance after successful transaction
+        await refreshBalance()
+      } else {
+        addToast(t('tokenForm.deployFailed'), 'error')
+      }
+    } catch (error: unknown) {
+      addToast(error instanceof Error ? error.message : t('tokenForm.deployError'), 'error')
     } finally {
       setIsDeploying(false)
     }
@@ -138,6 +168,13 @@ export const TokenCreateForm: React.FC = () => {
         </div>
       )}
 
+      {isDeploying && (
+        <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-5 rounded-lg">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-4">Deployment Progress</h3>
+          <ProgressIndicator steps={deploymentSteps} />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Token Name"
@@ -145,6 +182,7 @@ export const TokenCreateForm: React.FC = () => {
           onChange={(e) => setName(e.target.value)}
           placeholder="My Token"
           required
+          disabled={isDeploying}
         />
         <Input
           label="Token Symbol"
@@ -152,6 +190,7 @@ export const TokenCreateForm: React.FC = () => {
           onChange={(e) => setSymbol(e.target.value.toUpperCase())}
           placeholder="MTK"
           required
+          disabled={isDeploying}
         />
         <Input
           label="Decimals"
@@ -162,6 +201,7 @@ export const TokenCreateForm: React.FC = () => {
           min="0"
           max="18"
           required
+          disabled={isDeploying}
         />
         <Input
           label="Initial Supply"
@@ -169,9 +209,10 @@ export const TokenCreateForm: React.FC = () => {
           onChange={(e) => setInitialSupply(e.target.value)}
           placeholder="1000000"
           required
+          disabled={isDeploying}
         />
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {t('tokenForm.descriptionLabel')}
           </label>
           <textarea
@@ -179,7 +220,8 @@ export const TokenCreateForm: React.FC = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('tokenForm.descriptionPlaceholder')}
-            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+            disabled={isDeploying}
+            className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-white"
             rows={3}
           />
         </div>
