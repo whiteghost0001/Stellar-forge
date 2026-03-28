@@ -53,7 +53,7 @@ export const TokenCreateForm: React.FC = () => {
     const sanitizedDescription = sanitizeTokenInput(description)
 
     if (!validateTokenName(sanitizedName)) {
-      addToast('Invalid token name: must be 1-32 characters', 'error')
+      addToast('Invalid token name: must be 1-32 characters using only letters, digits, spaces, hyphens, and underscores', 'error')
       return
     }
     if (!validateTokenSymbol(sanitizedSymbol)) {

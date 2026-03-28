@@ -95,17 +95,17 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-scale-in ${className}`}
+        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto animate-scale-in ${className}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
-          <h2 id={titleId} className="text-2xl font-bold text-gray-900">
+          <h2 id={titleId} className="text-2xl font-bold text-gray-900 dark:text-white">
             {title}
           </h2>
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 -mr-1"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1 -mr-1"
           >
             <svg
               className="w-5 h-5"
