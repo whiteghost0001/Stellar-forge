@@ -106,8 +106,7 @@ export const TokenCreateForm: React.FC = () => {
         addToast(t('tokenForm.deployFailed'), 'error')
       }
     } catch (error: unknown) {
-      console.error('Deployment error:', error)
-      addToast(t('tokenForm.deployError'), 'error')
+      addToast(error instanceof Error ? error.message : t('tokenForm.deployError'), 'error')
     } finally {
       setIsDeploying(false)
     }

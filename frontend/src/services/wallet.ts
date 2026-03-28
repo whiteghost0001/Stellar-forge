@@ -143,8 +143,8 @@ export class WalletService {
 
       this.connectedAddress = addressObj.address
       return addressObj.address
-    } catch (error) {
-      console.error('Failed to check existing connection:', error)
+    } catch {
+      // Silent — caller receives null and can prompt manual connect
     }
 
     return null

@@ -115,10 +115,9 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
         break
       }
 
-      // Calculate exponential backoff delay: baseDelay * 2^(attempt-1)
+      // Exponential backoff before next attempt
       const delayMs = baseDelayMs * Math.pow(2, attempt - 1)
-
-      console.warn(`Attempt ${attempt}/${maxAttempts} failed, retrying in ${delayMs}ms...`, error)
+      void error // consumed by caller on final throw
 
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }

@@ -21,6 +21,8 @@ import { BurnForm } from './components/BurnForm'
 import { Dashboard } from './components/Dashboard'
 import { TokenDetail } from './components/TokenDetail'
 import { FAQ } from './components/FAQ'
+import { AdminPanel } from './components/AdminPanel'
+import { useFactoryState } from './hooks/useFactoryState'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
@@ -38,6 +40,9 @@ function AppContent() {
   const { addToast } = useToast()
   const { t } = useTranslation()
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const { state: factoryState } = useFactoryState()
+
+  const isAdmin = !!wallet.address && !!factoryState?.admin && wallet.address === factoryState.admin
 
   const { theme, toggleTheme } = useTheme()
 
@@ -162,7 +167,7 @@ function AppContent() {
               </a>
             )}
 
-            <NavBar onHelpClick={() => setShowOnboarding(true)} />
+            <NavBar onHelpClick={() => setShowOnboarding(true)} isAdmin={isAdmin} />
           </div>
         </header>
         {showOnboarding && null /* OnboardingModal placeholder */}
@@ -245,6 +250,16 @@ function AppContent() {
                     <ProtectedRoute>
                       <ErrorBoundary>
                         <TokenDetail />
+                      </ErrorBoundary>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <ErrorBoundary>
+                        <AdminPanel />
                       </ErrorBoundary>
                     </ProtectedRoute>
                   }

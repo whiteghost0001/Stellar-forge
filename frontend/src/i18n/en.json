@@ -12,7 +12,8 @@
     "tokens": "Tokens",
     "ariaLabel": "Primary",
     "openMenu": "Open navigation menu",
-    "closeMenu": "Close navigation menu"
+    "closeMenu": "Close navigation menu",
+    "admin": "Admin"
   },
   "wallet": {
     "connect": "Connect Wallet",
