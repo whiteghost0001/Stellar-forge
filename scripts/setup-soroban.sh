@@ -23,6 +23,14 @@ if ! command -v stellar &> /dev/null; then
     cargo install stellar-cli --features opt
 fi
 
+# Verify stellar CLI is available
+if ! command -v stellar &> /dev/null; then
+    echo "ERROR: stellar CLI installation failed. Please install manually:"
+    echo "  cargo install stellar-cli --features opt"
+    exit 1
+fi
+echo "stellar CLI version: $(stellar --version)"
+
 # Configure testnet
 stellar network add testnet \
   --rpc-url https://soroban-testnet.stellar.org \

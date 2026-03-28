@@ -1,23 +1,15 @@
+import { Button, Spinner } from './UI'
 import { useState, useEffect, useCallback } from 'react'
-import { stellarService } from '../services/stellar'
-import { Button } from './UI/Button'
-import { Spinner } from './UI/Spinner'
-import { STELLAR_CONFIG } from '../config/stellar'
+import { useTranslation } from 'react-i18next'
+import { useStellarContext } from '../context/StellarContext'
+import { useNetwork } from '../context/NetworkContext'
+import { stellarExplorerUrl } from '../utils/formatting'
 import type { ContractEvent, ContractEventType } from '../types'
 
 interface Props {
   contractId: string
-  /** Optional: filter to events for a specific token address */
   tokenAddress?: string
   pageSize?: number
-}
-
-const EVENT_LABELS: Record<ContractEventType, string> = {
-  token_created: 'Token Created',
-  tokens_minted: 'Tokens Minted',
-  tokens_burned: 'Tokens Burned',
-  metadata_set: 'Metadata Set',
-  fees_updated: 'Fees Updated',
 }
 
 const EVENT_COLORS: Record<ContractEventType, string> = {
@@ -30,10 +22,7 @@ const EVENT_COLORS: Record<ContractEventType, string> = {
 
 function formatTimestamp(unix: number): string {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
+  return new Date(unix * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function truncate(str: string, len = 12): string {
@@ -41,11 +30,11 @@ function truncate(str: string, len = 12): string {
   return `${str.slice(0, 6)}…${str.slice(-4)}`
 }
 
-function EventDataRow({ label, value }: { label: string; value: string }) {
+function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
   return (
     <span className="inline-flex gap-1 text-xs text-gray-600">
       <span className="font-medium">{label}:</span>
-      <span title={value} className="font-mono">{truncate(value, 20)}</span>
+      <span title={value} className="font-mono">{value ? truncate(value, 20) : '—'}</span>
     </span>
   )
 }
@@ -98,6 +87,9 @@ export const TransactionHistory: React.FC<Props> = ({
   tokenAddress,
   pageSize = 20,
 }) => {
+  const { stellarService } = useStellarContext()
+  const { network } = useNetwork()
+  const { t } = useTranslation()
   const [events, setEvents] = useState<ContractEvent[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -108,78 +100,63 @@ export const TransactionHistory: React.FC<Props> = ({
   const filterEvents = useCallback(
     (evts: ContractEvent[]) =>
       tokenAddress
-        ? evts.filter(
-            (e) =>
-              e.data.tokenAddress === tokenAddress ||
-              e.data.creator === tokenAddress,
-          )
+        ? evts.filter((e) => e.data.tokenAddress === tokenAddress || e.data.creator === tokenAddress)
         : evts,
     [tokenAddress],
   )
 
   const fetchInitial = useCallback(async () => {
     if (!contractId) return
-    setLoading(true)
-    setError(null)
+    setLoading(true); setError(null)
     try {
       const result = await stellarService.getContractEvents(contractId, pageSize)
       setEvents(filterEvents(result.events))
       setCursor(result.cursor)
       setHasMore(result.events.length === pageSize)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load events')
+      setError(err instanceof Error ? err.message : t('transactionHistory.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [contractId, pageSize, filterEvents])
+  }, [contractId, pageSize, filterEvents, stellarService])
 
-  useEffect(() => {
-    fetchInitial()
-  }, [fetchInitial])
+  useEffect(() => { fetchInitial() }, [fetchInitial])
 
   const loadMore = async () => {
     if (!cursor || loadingMore) return
     setLoadingMore(true)
     try {
       const result = await stellarService.getContractEvents(contractId, pageSize, cursor)
-      const filtered = filterEvents(result.events)
-      setEvents((prev) => [...prev, ...filtered])
+      setEvents((prev) => [...prev, ...filterEvents(result.events)])
       setCursor(result.cursor)
       setHasMore(result.events.length === pageSize)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load more events')
+      setError(err instanceof Error ? err.message : t('transactionHistory.loadMoreFailed'))
     } finally {
       setLoadingMore(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Spinner />
-      </div>
-    )
-  }
+  const renderLocalEventData = renderEventData
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
         {error}
-        <button
-          onClick={fetchInitial}
-          className="ml-2 underline hover:no-underline"
-        >
-          Retry
+        <button onClick={fetchInitial} className="ml-2 underline hover:no-underline">
+          {t('transactionHistory.retry')}
         </button>
       </div>
     )
   }
 
   if (events.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-gray-500">No events found.</p>
-    )
+    return <p className="py-6 text-center text-sm text-gray-500">{t('transactionHistory.noEvents')}</p>
   }
+
+  const eventLabels = t('transactionHistory.eventLabels', { returnObjects: true }) as Record<ContractEventType, string>
 
   return (
     <div className="space-y-3">
@@ -187,24 +164,20 @@ export const TransactionHistory: React.FC<Props> = ({
         {events.map((event) => (
           <li key={event.id} className="flex flex-col gap-1 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}
-              >
-                {EVENT_LABELS[event.type]}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${EVENT_COLORS[event.type]}`}>
+                {eventLabels[event.type] ?? event.type}
               </span>
-              <span className="text-xs text-gray-400">
-                {formatTimestamp(event.timestamp)}
-              </span>
+              <span className="text-xs text-gray-400">{formatTimestamp(event.timestamp)}</span>
             </div>
-            {renderEventData(event)}
+            {renderLocalEventData(event)}
             <a
-              href={`https://stellar.expert/explorer/${STELLAR_CONFIG.network}/tx/${event.txHash}`}
+              href={stellarExplorerUrl('tx', event.txHash, network)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-0.5 text-xs text-indigo-500 hover:underline font-mono"
               title={event.txHash}
             >
-              tx: {truncate(event.txHash, 24)}
+              {t('transactionHistory.dataLabels.tx')}: {truncate(event.txHash, 24)}
             </a>
           </li>
         ))}
@@ -213,7 +186,7 @@ export const TransactionHistory: React.FC<Props> = ({
       {hasMore && (
         <div className="flex justify-center">
           <Button onClick={loadMore} loading={loadingMore} variant="secondary">
-            Load more
+            {t('transactionHistory.loadMore')}
           </Button>
         </div>
       )}

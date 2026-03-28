@@ -128,11 +128,12 @@ describe('withRetry', () => {
     const fn = vi.fn().mockRejectedValue(error)
 
     const promise = withRetry(fn, { maxAttempts: 3, baseDelayMs: 500 })
+    const assertion = expect(promise).rejects.toEqual(error)
 
     await vi.advanceTimersByTimeAsync(500)
     await vi.advanceTimersByTimeAsync(1000)
 
-    await expect(promise).rejects.toEqual(error)
+    await assertion
     expect(fn).toHaveBeenCalledTimes(3)
   })
 
@@ -151,11 +152,12 @@ describe('withRetry', () => {
     const fn = vi.fn().mockRejectedValue({ message: 'Network error' })
 
     const promise = withRetry(fn)
+    const assertion = expect(promise).rejects.toBeDefined()
 
     await vi.advanceTimersByTimeAsync(500)
     await vi.advanceTimersByTimeAsync(1000)
 
-    await expect(promise).rejects.toBeDefined()
+    await assertion
     expect(fn).toHaveBeenCalledTimes(3) // Default maxAttempts
   })
 

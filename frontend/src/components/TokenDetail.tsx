@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useStellarContext } from '../context/StellarContext'
 import { useParams, Link } from 'react-router-dom'
-import { stellarService } from '../services/stellar'
 import { ipfsService } from '../services/ipfs'
-import { IPFS_CONFIG } from '../config/ipfs'
+import { useNetwork } from '../context/NetworkContext'
+import { stellarExplorerUrl, ipfsToGatewayUrl } from '../utils/formatting'
+import { isValidContractAddress } from '../utils/validation'
 import type { TokenInfo, IPFSMetadata } from '../types'
 import { Card } from './UI/Card'
 import { Button } from './UI/Button'
 import { Spinner } from './UI/Spinner'
+import { QRCodeModal } from './UI/QRCodeModal'
 import { MintForm } from './MintForm'
 import { BurnForm } from './BurnForm'
 import { SetMetadataForm } from './SetMetadataForm'
@@ -14,31 +17,25 @@ import { useToast } from '../context/ToastContext'
 
 type ActivePanel = 'mint' | 'burn' | 'metadata' | null
 
-function isValidStellarAddress(addr: string): boolean {
-  return /^[CG][A-Z0-9]{55}$/.test(addr)
-}
-
-function ipfsToHttp(uri: string): string {
-  const cid = uri.replace('ipfs://', '')
-  return `${IPFS_CONFIG.pinataGateway}/${cid}`
-}
-
 function formatTimestamp(ts: number): string {
   return new Date(ts * 1000).toLocaleString()
 }
 
 export const TokenDetail: React.FC = () => {
+  const { stellarService } = useStellarContext()
   const { address } = useParams<{ address: string }>()
   const { addToast } = useToast()
+  const { network } = useNetwork()
 
   const [token, setToken] = useState<TokenInfo | null>(null)
   const [metadata, setMetadata] = useState<IPFSMetadata | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
+  const [showQR, setShowQR] = useState(false)
 
   useEffect(() => {
-    if (!address || !isValidStellarAddress(address)) {
+    if (!address || !isValidContractAddress(address)) {
       setNotFound(true)
       setLoading(false)
       return
@@ -62,7 +59,7 @@ export const TokenDetail: React.FC = () => {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
-  }, [address])
+  }, [address, stellarService])
 
   const handleSetMetadata = async (_addr: string, uri: string) => {
     // placeholder — real impl would sign + submit a contract call
@@ -96,7 +93,7 @@ export const TokenDetail: React.FC = () => {
     )
   }
 
-  const imageUrl = metadata?.image ? ipfsToHttp(metadata.image) : null
+  const imageUrl = metadata?.image ? ipfsToGatewayUrl(metadata.image) : null
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
@@ -117,7 +114,16 @@ export const TokenDetail: React.FC = () => {
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Address</dt>
-            <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">{address}</dd>
+            <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
+              <a
+                href={stellarExplorerUrl('contract', address!, network)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-500 hover:underline"
+              >
+                {address}
+              </a>
+            </dd>
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Total Supply</dt>
@@ -130,7 +136,16 @@ export const TokenDetail: React.FC = () => {
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Creator</dt>
             <dd className="font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
-              {token.creator || '—'}
+              {token.creator ? (
+                <a
+                  href={stellarExplorerUrl('account', token.creator, network)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-500 hover:underline"
+                >
+                  {token.creator}
+                </a>
+              ) : '—'}
             </dd>
           </div>
           {token.createdAt && (
@@ -157,7 +172,7 @@ export const TokenDetail: React.FC = () => {
             {imageUrl && (
               <img
                 src={imageUrl}
-                alt={`${token.name} token image`}
+                alt={`${token.name} token art`}
                 className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
@@ -187,20 +202,25 @@ export const TokenDetail: React.FC = () => {
             {activePanel === 'metadata' ? 'Cancel' : 'Set Metadata'}
           </Button>
         )}
+        <Button onClick={() => setShowQR(true)} variant="outline">
+          Show QR
+        </Button>
       </div>
 
+      <QRCodeModal isOpen={showQR} address={address!} onClose={() => setShowQR(false)} />
+
       {/* Inline action panels */}
-      {activePanel === 'mint' && (
+      {activePanel === 'mint' && address && (
         <Card title="Mint More Tokens">
           <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
         </Card>
       )}
-      {activePanel === 'burn' && (
+      {activePanel === 'burn' && address && (
         <Card title="Burn Tokens">
           <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
         </Card>
       )}
-      {activePanel === 'metadata' && (
+      {activePanel === 'metadata' && address && (
         <Card title="Set Metadata">
           <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
         </Card>
