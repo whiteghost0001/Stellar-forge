@@ -21,6 +21,7 @@ import { BurnForm } from './components/BurnForm'
 import { Dashboard } from './components/Dashboard'
 import { TokenDetail } from './components/TokenDetail'
 import { FAQ } from './components/FAQ'
+import { NotFound } from './components/NotFound'
 import { isFactoryConfigured } from './config/env'
 import ErrorBoundary from './components/ErrorBoundary'
 import { TosProvider } from './context/TosContext'
@@ -249,7 +250,7 @@ function AppContent() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
           </div>
