@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CopyButton } from './CopyButton'
 import { Input, PaginationControls } from './UI'
 import { TransactionHistory } from './TransactionHistory'
 import { useDebounce } from '../hooks/useDebounce'
@@ -97,15 +98,21 @@ export const TokenDashboard: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <a
-                  href={explorerUrl(token.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:underline shrink-0"
-                  aria-label={`View ${token.name} on Stellar Explorer`}
-                >
-                  Explorer ↗
-                </a>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-blue-500 hover:underline shrink-0 truncate max-w-[100px]" title={token.address} aria-label={`View ${token.name} on Stellar Explorer`}>
+                    {token.address}
+                  </span>
+                  <CopyButton value={token.address} ariaLabel="Copy token address" />
+                  <a
+                    href={explorerUrl(token.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:underline shrink-0"
+                    aria-label={`View ${token.name} on Stellar Explorer`}
+                  >
+                    ↗
+                  </a>
+                </div>
               </li>
             ))
           )}
@@ -134,3 +141,4 @@ export const TokenDashboard: React.FC = () => {
 }
 
 export const Dashboard = TokenDashboard
+

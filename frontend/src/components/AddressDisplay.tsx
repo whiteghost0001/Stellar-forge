@@ -1,5 +1,5 @@
 import { truncateAddress, stellarExplorerUrl } from '../utils/formatting'
-import { useClipboard } from '../hooks/useClipboard'
+import { CopyButton } from './CopyButton'
 
 interface AddressDisplayProps {
   address: string
@@ -14,8 +14,6 @@ export const AddressDisplay = ({
   showCopy = true,
   showExplorer = true,
 }: AddressDisplayProps) => {
-  const { copied, copy } = useClipboard()
-
   return (
     <span className="inline-flex items-center gap-1 font-mono text-sm">
       <span title={address}>{truncateAddress(address)}</span>
@@ -54,6 +52,7 @@ export const AddressDisplay = ({
           )}
         </button>
       )}
+
 
       {showExplorer && (
         <a

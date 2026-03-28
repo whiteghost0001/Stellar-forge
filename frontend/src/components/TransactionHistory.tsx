@@ -1,3 +1,4 @@
+import { CopyButton } from './CopyButton'
 import { Button, Spinner } from './UI'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -30,7 +31,7 @@ function formatTimestamp(unix: number): string {
 
 function EventDataRow({ label, value }: { label: string; value: string | undefined }) {
   return (
-    <span className="inline-flex gap-1 text-xs text-gray-600">
+    <span className="inline-flex items-center gap-1 text-xs text-gray-600">
       <span className="font-medium">{label}:</span>
       <span title={value} className="font-mono">
         {value ? formatAddress(value) : '—'}
