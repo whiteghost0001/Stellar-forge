@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { stellarService } from '../services/stellar'
+import { useParams, Link } from 'react-router-dom'
+import { useStellarContext } from '../context/StellarContext'
+import { useNetwork } from '../context/NetworkContext'
+import { useToast } from '../context/ToastContext'
+import { useWallet } from '../hooks/useWallet'
+import { ipfsService } from '../services/ipfs'
+import { stellarExplorerUrl, ipfsToGatewayUrl, formatAddress } from '../utils/formatting'
+import { isValidContractAddress } from '../utils/validation'
+import type { TokenInfo, IPFSMetadata } from '../types'
+import { Card, Button, Spinner } from './UI'
+import { CopyButton } from './CopyButton'
+import { QRCodeModal } from './UI/QRCodeModal'
 import { ShareButton } from './ShareButton'
-import type { TokenInfo } from '../types'
+import { MintForm } from './MintForm'
+import { BurnForm } from './BurnForm'
+import { SetMetadataForm } from './SetMetadataForm'
 
 const BASE_URL = 'https://stellarforge.app'
+
+type ActivePanel = 'mint' | 'burn' | 'metadata' | null
+
+function formatTimestamp(ts: number): string {
+  return new Date(ts * 1000).toLocaleString()
+}
 
 function setMeta(property: string, content: string) {
   let el = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`)
@@ -14,36 +32,14 @@ function setMeta(property: string, content: string) {
     document.head.appendChild(el)
   }
   el.setAttribute('content', content)
-import { useStellarContext } from '../context/StellarContext'
-import { useParams, Link } from 'react-router-dom'
-import { ipfsService } from '../services/ipfs'
-import { useNetwork } from '../context/NetworkContext'
-import { stellarExplorerUrl, ipfsToGatewayUrl, formatAddress } from '../utils/formatting'
-import { isValidContractAddress } from '../utils/validation'
-import type { TokenInfo, IPFSMetadata } from '../types'
-import { CopyButton } from './CopyButton'
-import { Card } from './UI/Card'
-import { Button } from './UI/Button'
-import { Spinner } from './UI/Spinner'
-import { QRCodeModal } from './UI/QRCodeModal'
-import { MintForm } from './MintForm'
-import { BurnForm } from './BurnForm'
-import { SetMetadataForm } from './SetMetadataForm'
-import { useToast } from '../context/ToastContext'
-
-type ActivePanel = 'mint' | 'burn' | 'metadata' | null
-
-function formatTimestamp(ts: number): string {
-  return new Date(ts * 1000).toLocaleString()
 }
 
 export const TokenDetail: React.FC = () => {
   const { stellarService } = useStellarContext()
   const { address } = useParams<{ address: string }>()
-  const [token, setToken] = useState<TokenInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const { addToast } = useToast()
   const { network } = useNetwork()
+  const { wallet } = useWallet()
 
   const [token, setToken] = useState<TokenInfo | null>(null)
   const [metadata, setMetadata] = useState<IPFSMetadata | null>(null)
@@ -51,6 +47,8 @@ export const TokenDetail: React.FC = () => {
   const [notFound, setNotFound] = useState(false)
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
   const [showQR, setShowQR] = useState(false)
+
+  const isCreator = token?.creator && wallet.address && token.creator === wallet.address
 
   useEffect(() => {
     if (!address || !isValidContractAddress(address)) {
@@ -64,9 +62,6 @@ export const TokenDetail: React.FC = () => {
 
     stellarService
       .getTokenInfo(address)
-      .then((t) => setToken(t as TokenInfo))
-      .catch((err: Error) => setError(err.message || 'Unable to load token'))
-  }, [address])
       .then(async (info) => {
         setToken(info)
         if (info.metadataUri) {
@@ -81,42 +76,6 @@ export const TokenDetail: React.FC = () => {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [address, stellarService])
-
-  const handleSetMetadata = async (_addr: string, uri: string) => {
-    // placeholder — real impl would sign + submit a contract call
-    addToast(`Metadata URI set: ${uri}`, 'success')
-    if (token) setToken({ ...token, metadataUri: uri })
-    setActivePanel(null)
-  }
-
-  const togglePanel = (panel: ActivePanel) =>
-    setActivePanel((prev: ActivePanel) => (prev === panel ? null : panel))
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20" aria-live="polite">
-        <Spinner size="lg" label="Loading token details…" />
-      </div>
-    )
-  }
-
-  if (notFound || !token) {
-    return (
-      <div className="text-center py-20 space-y-4" role="alert">
-        <p className="text-2xl font-semibold text-gray-700 dark:text-gray-300">Token not found</p>
-        <p className="text-gray-500 dark:text-gray-400 text-sm break-all">
-          No token found at address: <span className="font-mono">{address}</span>
-        </p>
-        <Link to="/tokens">
-          <Button variant="outline" size="sm">
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
-    )
-  }
-
-  const imageUrl = metadata?.image ? ipfsToGatewayUrl(metadata.image) : null
 
   // Inject Open Graph meta tags for rich link previews
   useEffect(() => {
@@ -142,60 +101,60 @@ export const TokenDetail: React.FC = () => {
     }
   }, [token, address])
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Token Detail</h2>
-        {address && (
-          <ShareButton
-            tokenAddress={address}
-            tokenName={token?.name}
-            tokenSymbol={token?.symbol}
-          />
-        )}
-      </div>
+  const handleSetMetadata = async (_addr: string, uri: string) => {
+    addToast(`Metadata URI set: ${uri}`, 'success')
+    if (token) setToken({ ...token, metadataUri: uri })
+    setActivePanel(null)
+  }
 
-      <div className="p-4 rounded-lg border border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-700">
-        {error && <p className="text-red-500">{error}</p>}
-        {!token && !error && <p className="text-gray-500">Loading token {address}...</p>}
-        {token && (
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">Name</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">{token.name}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">Symbol</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">{token.symbol}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">Decimals</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">{token.decimals}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">Total Supply</dt>
-              <dd className="font-medium text-gray-900 dark:text-white">{token.totalSupply}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">Creator</dt>
-              <dd className="font-mono text-xs text-gray-900 dark:text-white break-all">{token.creator}</dd>
-            </div>
-          </dl>
-        )}
+  const togglePanel = (panel: ActivePanel) =>
+    setActivePanel((prev) => (prev === panel ? null : panel))
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20" aria-live="polite">
+        <Spinner size="lg" label="Loading token details…" />
+      </div>
+    )
+  }
+
+  if (notFound || !token) {
+    return (
+      <div className="text-center py-20 space-y-4" role="alert">
+        <p className="text-2xl font-semibold text-gray-700 dark:text-gray-300">Token not found</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm break-all">
+          No token found at address: <span className="font-mono">{address}</span>
+        </p>
+        <Link to="/tokens">
+          <Button variant="outline" size="sm">Back to Dashboard</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const imageUrl = metadata?.image ? ipfsToGatewayUrl(metadata.image) : null
+
+  return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
-"text-2xl font-bold text-gray-900 dark:text-white"
-
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           {token.name}
           <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">
             ({token.symbol})
           </span>
         </h2>
-        <Link to="/tokens">
-          <Button variant="outline" size="sm">
-            ← Back
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {address && (
+            <ShareButton
+              tokenAddress={address}
+              tokenName={token.name}
+              tokenSymbol={token.symbol}
+            />
+          )}
+          <Link to="/tokens">
+            <Button variant="outline" size="sm">← Back</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Token info card */}
@@ -218,7 +177,7 @@ export const TokenDetail: React.FC = () => {
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Total Supply</dt>
-            <dd className="text-gray-900 dark:text-gray-100 mt-1">{token.totalSupply}</dd>
+            <dd className="text-gray-900 dark:text-gray-100 mt-1">{token.totalSupply ?? '—'}</dd>
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Decimals</dt>
@@ -237,20 +196,18 @@ export const TokenDetail: React.FC = () => {
                 >
                   {formatAddress(token.creator)}
                 </a>
-              ) : (
-                '—'
-              )}
+              ) : '—'}
             </dd>
           </div>
-          {token.createdAt && (
+          {token.createdAt ? (
             <div>
               <dt className="text-gray-500 dark:text-gray-400">Created</dt>
               <dd className="text-gray-900 dark:text-gray-100 mt-1">
                 {formatTimestamp(token.createdAt)}
               </dd>
             </div>
-          )}
-          {token.metadataUri && (
+          ) : null}
+          {token.metadataUri ? (
             <div className="sm:col-span-2">
               <dt className="text-gray-500 dark:text-gray-400">Metadata URI</dt>
               <dd className="flex items-center gap-1 font-mono text-xs break-all text-gray-900 dark:text-gray-100 mt-1">
@@ -258,7 +215,7 @@ export const TokenDetail: React.FC = () => {
                 <CopyButton value={token.metadataUri} ariaLabel="Copy metadata URI" />
               </dd>
             </div>
-          )}
+          ) : null}
         </dl>
       </Card>
 
@@ -271,9 +228,7 @@ export const TokenDetail: React.FC = () => {
                 src={imageUrl}
                 alt={`${token.name} token art`}
                 className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
-                onError={(e) => {
-                  ;(e.target as HTMLImageElement).style.display = 'none'
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
             )}
             <div className="space-y-1 text-sm">
@@ -290,16 +245,24 @@ export const TokenDetail: React.FC = () => {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => togglePanel('mint')} variant="primary">
-          {activePanel === 'mint' ? 'Cancel Mint' : 'Mint More'}
-        </Button>
-        <Button onClick={() => togglePanel('burn')} variant="secondary">
-          {activePanel === 'burn' ? 'Cancel Burn' : 'Burn Tokens'}
-        </Button>
-        {!token.metadataUri && (
-          <Button onClick={() => togglePanel('metadata')} variant="outline">
-            {activePanel === 'metadata' ? 'Cancel' : 'Set Metadata'}
-          </Button>
+        {isCreator ? (
+          <>
+            <Button onClick={() => togglePanel('mint')} variant="primary">
+              {activePanel === 'mint' ? 'Cancel Mint' : 'Mint More'}
+            </Button>
+            <Button onClick={() => togglePanel('burn')} variant="secondary">
+              {activePanel === 'burn' ? 'Cancel Burn' : 'Burn Tokens'}
+            </Button>
+            {!token.metadataUri && (
+              <Button onClick={() => togglePanel('metadata')} variant="outline">
+                {activePanel === 'metadata' ? 'Cancel' : 'Set Metadata'}
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400 py-2">
+            Only the token creator can perform actions on this token.
+          </div>
         )}
         <Button onClick={() => setShowQR(true)} variant="outline">
           Show QR
@@ -308,21 +271,25 @@ export const TokenDetail: React.FC = () => {
 
       <QRCodeModal isOpen={showQR} address={address!} onClose={() => setShowQR(false)} />
 
-      {/* Inline action panels */}
-      {activePanel === 'mint' && address && (
-        <Card title="Mint More Tokens">
-          <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
-        </Card>
-      )}
-      {activePanel === 'burn' && address && (
-        <Card title="Burn Tokens">
-          <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
-        </Card>
-      )}
-      {activePanel === 'metadata' && address && (
-        <Card title="Set Metadata">
-          <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
-        </Card>
+      {/* Inline action panels - only for creator */}
+      {isCreator && (
+        <>
+          {activePanel === 'mint' && address && (
+            <Card title="Mint More Tokens">
+              <MintForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
+            </Card>
+          )}
+          {activePanel === 'burn' && address && (
+            <Card title="Burn Tokens">
+              <BurnForm tokenAddress={address} onSuccess={() => setActivePanel(null)} />
+            </Card>
+          )}
+          {activePanel === 'metadata' && address && (
+            <Card title="Set Metadata">
+              <SetMetadataForm tokenAddress={address} onSubmit={handleSetMetadata} />
+            </Card>
+          )}
+        </>
       )}
     </div>
   )

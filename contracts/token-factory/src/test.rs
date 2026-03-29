@@ -119,7 +119,7 @@ fn test_create_token_insufficient_fee() {
         &creator, &s.salt(0), &s.dummy_hash(),
         &String::from_str(&s.env, "MyToken"),
         &String::from_str(&s.env, "MTK"),
-        &7, &0, &999,
+        &7, &0_u128, &999,
     );
     assert_eq!(result, Err(Ok(Error::InsufficientFee)));
 }
@@ -135,7 +135,7 @@ fn test_create_token_blocked_when_paused() {
         &creator, &s.salt(0), &s.dummy_hash(),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
-        &7, &0, &1_000,
+        &7, &0_u128, &1_000,
     );
     assert_eq!(result, Err(Ok(Error::ContractPaused)));
 }
@@ -552,7 +552,7 @@ fn test_reentrancy_guard_blocks_concurrent_call() {
         &creator, &s.salt(0), &s.dummy_hash(),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
-        &7, &0, &1_000,
+        &7, &0_u128, &1_000,
     );
     assert_eq!(result, Err(Ok(Error::Reentrancy)));
 }
@@ -567,7 +567,7 @@ fn test_reentrancy_guard_released_after_error() {
         &creator, &s.salt(0), &s.dummy_hash(),
         &String::from_str(&s.env, "T"),
         &String::from_str(&s.env, "T"),
-        &7, &0, &1, // fee too low → InsufficientFee
+        &7, &0_u128, &1, // fee too low → InsufficientFee
     );
 
     // After the failed call, locked must be false
@@ -588,7 +588,34 @@ fn test_initial_state_is_not_locked() {
     });
 }
 
-// ── get_tokens_by_creator ─────────────────────────────────────────────────────
+// ── TTL ───────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_ttl_extended_after_initialize() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register_contract(None, TokenFactory);
+    let client = TokenFactoryClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    let fee_token = env.register_stellar_asset_contract_v2(admin.clone()).address();
+
+    client.initialize(&admin, &treasury, &fee_token, &1_000, &500);
+
+    // After initialize the instance TTL must be at least MIN_TTL ledgers.
+    // The test env starts at ledger 0; extend_ttl(100_000, 535_000) sets the
+    // live-until ledger to 535_000, so the TTL is 535_000 - current = 535_000.
+    env.as_contract(&contract_id, || {
+        let ttl = env.storage().instance().get_ttl();
+        assert!(
+            ttl >= super::MIN_TTL,
+            "instance TTL after initialize ({ttl}) must be >= MIN_TTL ({})",
+            super::MIN_TTL,
+        );
+    });
+}
 
 #[test]
 fn test_get_tokens_by_creator() {
@@ -641,7 +668,7 @@ fn test_token_count_overflow_protection() {
         &String::from_str(&s.env, "OverflowToken"),
         &String::from_str(&s.env, "OVF"),
         &6,
-        &0,
+        &0_u128,
         &5_000,
     );
     
@@ -748,8 +775,7 @@ fn test_burn_amount_exceeds_balance() {
     let token_addr = s.new_token(&user);
     
     // Mint some tokens to the user
-    let token_client = TokenClient::new(&s.env, &token_addr);
-    token_client.mint(&user, &100);
+    StellarAssetClient::new(&s.env, &token_addr).mint(&user, &100);
     
     // Attempt to burn more than balance
     let result = s.client.try_burn(&token_addr, &user, &101);
@@ -776,13 +802,12 @@ fn test_burn_at_exact_balance() {
     });
     
     // Mint some tokens to the user
-    let token_client = TokenClient::new(&s.env, &token_addr);
-    token_client.mint(&user, &100);
+    StellarAssetClient::new(&s.env, &token_addr).mint(&user, &100);
     
     // Burn exactly the balance
     let result = s.client.try_burn(&token_addr, &user, &100);
     assert!(result.is_ok());
     
     // Verify balance is now 0
-    assert_eq!(token_client.balance(&user), 0);
+    assert_eq!(TokenClient::new(&s.env, &token_addr).balance(&user), 0);
 }
