@@ -247,6 +247,8 @@ fn test_set_metadata_unauthorized() {
         s.env.storage().instance().set(&symbol_short!("state"), &state);
         s.env.storage().instance()
             .set(&(&token_addr, symbol_short!("idx")), &index);
+        s.env.storage().instance()
+            .set(&(&token_addr, symbol_short!("owner")), &creator);
     });
 
     // Unauthorized user should not be able to set metadata
@@ -302,6 +304,8 @@ fn test_mint_tokens_unauthorized() {
         s.env.storage().instance().set(&symbol_short!("state"), &state);
         s.env.storage().instance()
             .set(&(&token_addr, symbol_short!("idx")), &index);
+        s.env.storage().instance()
+            .set(&(&token_addr, symbol_short!("owner")), &creator);
     });
 
     // Unauthorized user should not be able to mint tokens
@@ -333,6 +337,8 @@ fn seed_token_with_burn(s: &Setup, creator: &Address, burn_enabled: bool) -> Add
         s.env.storage().instance().set(&symbol_short!("state"), &state);
         s.env.storage().instance()
             .set(&(&token_addr, symbol_short!("idx")), &index);
+        s.env.storage().instance()
+            .set(&(&token_addr, symbol_short!("owner")), &creator);
     });
     token_addr
 }
@@ -687,6 +693,7 @@ fn test_mint_with_zero_amount_fails() {
     // Manually register the token in factory storage
     s.env.as_contract(&s.client.address, || {
         s.env.storage().instance().set(&(token_addr.clone(), symbol_short!("idx")), &1u32);
+        s.env.storage().instance().set(&(token_addr.clone(), symbol_short!("owner")), &admin);
         s.env.storage().instance().set(&1u32, &TokenInfo {
             name: String::from_str(&s.env, "Token"),
             symbol: String::from_str(&s.env, "TKN"),
@@ -810,4 +817,21 @@ fn test_burn_at_exact_balance() {
     
     // Verify balance is now 0
     assert_eq!(TokenClient::new(&s.env, &token_addr).balance(&user), 0);
+}
+// ── upgrade ──────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_upgrade() {
+    let s = Setup::new();
+    let new_wasm_hash = s.salt(1); // just a dummy hash for test
+    s.client.upgrade(&s.admin, &new_wasm_hash);
+}
+
+#[test]
+fn test_upgrade_unauthorized() {
+    let s = Setup::new();
+    let stranger = Address::generate(&s.env);
+    let new_wasm_hash = s.salt(1);
+    let result = s.client.try_upgrade(&stranger, &new_wasm_hash);
+    assert_eq!(result, Err(Ok(Error::Unauthorized)));
 }

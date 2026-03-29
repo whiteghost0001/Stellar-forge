@@ -257,7 +257,10 @@ impl TokenFactory {
         list.push_back(index);
         env.storage().instance().set(&creator_key, &list);
 
-        // Store reverse mapping: token_address -> index (for burn_enabled lookup)
+        // Store direct mapping: token_address -> creator (for security checks)
+        env.storage().instance().set(&(&token_address, symbol_short!("owner")), &creator);
+
+        // Store reverse mapping: token_address -> index (for other lookups if needed)
         env.storage().instance().set(&(&token_address, symbol_short!("idx")), &index);
 
         // Extend TTL for all token-related storage entries written above.
@@ -284,22 +287,11 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        // Fetch TokenInfo to verify creator authorization
-        let idx_key = (&token_address, symbol_short!("idx"));
-        let index: u32 = env
-            .storage()
-            .instance()
-            .get(&idx_key)
+        // Verify admin is the token creator using direct mapping
+        let creator: Address = env.storage().instance().get(&(&token_address, symbol_short!("owner")))
             .ok_or(Error::TokenNotFound)?;
-
-        let token_info: TokenInfo = env
-            .storage()
-            .instance()
-            .get(&index)
-            .ok_or(Error::TokenNotFound)?;
-
-        // Verify admin is the token creator
-        if token_info.creator != admin {
+        
+        if creator != admin {
             return Err(Error::Unauthorized);
         }
 
@@ -337,7 +329,7 @@ impl TokenFactory {
         Self::require_not_paused(&env)?;
         admin.require_auth();
 
-        // Validate mint amount is positive and doesn't overflow
+        // Validate mint amount is positive
         if amount <= 0 {
             return Err(Error::InvalidParameters);
         }
@@ -348,22 +340,11 @@ impl TokenFactory {
             return Err(Error::InsufficientFee);
         }
 
-        // Fetch TokenInfo to verify creator authorization
-        let idx_key = (&token_address, symbol_short!("idx"));
-        let index: u32 = env
-            .storage()
-            .instance()
-            .get(&idx_key)
+        // Verify admin is the token creator using direct mapping
+        let creator: Address = env.storage().instance().get(&(&token_address, symbol_short!("owner")))
             .ok_or(Error::TokenNotFound)?;
-
-        let token_info: TokenInfo = env
-            .storage()
-            .instance()
-            .get(&index)
-            .ok_or(Error::TokenNotFound)?;
-
-        // Verify admin is the token creator
-        if token_info.creator != admin {
+        
+        if creator != admin {
             return Err(Error::Unauthorized);
         }
 
@@ -423,6 +404,14 @@ impl TokenFactory {
     ) -> Result<(), Error> {
         admin.require_auth();
 
+        // Verify admin is the token creator using direct mapping
+        let creator: Address = env.storage().instance().get(&(&token_address, symbol_short!("owner")))
+            .ok_or(Error::TokenNotFound)?;
+        
+        if creator != admin {
+            return Err(Error::Unauthorized);
+        }
+
         let idx_key = (&token_address, symbol_short!("idx"));
         let index: u32 = env
             .storage()
@@ -431,10 +420,6 @@ impl TokenFactory {
             .ok_or(Error::TokenNotFound)?;
 
         let mut info: TokenInfo = env.storage().instance().get(&index).ok_or(Error::TokenNotFound)?;
-
-        if info.creator != admin {
-            return Err(Error::Unauthorized);
-        }
 
         info.burn_enabled = enabled;
         env.storage().instance().set(&index, &info);
