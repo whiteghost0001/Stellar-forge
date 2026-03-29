@@ -195,6 +195,21 @@ function AppContent() {
               </div>
             )}
 
+            <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 mb-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                  Welcome to Nova Launch
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  Deploy your custom tokens on Stellar blockchain
+                </p>
+                <button
+                  onClick={handleGetStarted}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Get Started
+                </button>
+              </div>
             <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-sm">
               <Routes>
                 <Route

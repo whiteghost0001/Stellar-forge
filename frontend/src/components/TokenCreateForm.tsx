@@ -15,6 +15,7 @@ import {
   sanitizeTokenInput,
 } from '../utils/validation'
 import { ShareButton } from './ShareButton'
+import { CopyButton } from './CopyButton'
 import { useTranslation } from 'react-i18next'
 
 const ESTIMATED_FEE = '0.01' // XLM
@@ -153,9 +154,12 @@ export const TokenCreateForm: React.FC = () => {
               <p className="font-semibold text-green-800 dark:text-green-300">
                 {deployedToken.name} (${deployedToken.symbol}) deployed successfully!
               </p>
-              <p className="text-sm text-green-700 dark:text-green-400 mt-1 font-mono break-all">
-                {deployedToken.address}
-              </p>
+              <div className="inline-flex items-center gap-2 mt-1">
+                <p className="text-sm text-green-700 dark:text-green-400 font-mono break-all">
+                  {deployedToken.address}
+                </p>
+                <CopyButton value={deployedToken.address} ariaLabel="Copy token address" />
+              </div>
               <div className="mt-3">
                 <ShareButton
                   tokenAddress={deployedToken.address}

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import * as fc from 'fast-check'
 import {
   formatTimestamp,
   timeAgo,
@@ -57,6 +58,45 @@ describe('stellarExplorerUrl', () => {
 
   it('defaults to testnet', () => {
     expect(stellarExplorerUrl('tx', 'xyz')).toContain('testnet')
+  })
+
+  // Feature: stellar-explorer-links, Property 1: URL base path matches network
+  it('Property 1: URL base path matches network', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom('tx' as const, 'contract' as const, 'account' as const),
+        fc.string({ minLength: 1 }),
+        fc.constantFrom('testnet' as const, 'mainnet' as const),
+        (type, id, network) => {
+          const url = stellarExplorerUrl(type, id, network)
+          const expectedBase =
+            network === 'mainnet'
+              ? 'https://stellar.expert/explorer/public'
+              : 'https://stellar.expert/explorer/testnet'
+          return url.startsWith(expectedBase)
+        },
+      ),
+      { numRuns: 100 },
+    )
+  })
+
+  // Feature: stellar-explorer-links, Property 2: URL pathname contains correct resource segment and identifier (round-trip)
+  it('Property 2: URL pathname contains correct resource segment and identifier', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom('tx' as const, 'contract' as const, 'account' as const),
+        // Use alphanumeric identifiers to avoid URL normalization edge cases
+        // (e.g. '.' and '..' are normalized by the URL parser as path segments)
+        fc.stringMatching(/^[a-zA-Z0-9_\-]+$/).filter((s) => s.length >= 1),
+        fc.constantFrom('testnet' as const, 'mainnet' as const),
+        (type, id, network) => {
+          const url = stellarExplorerUrl(type, id, network)
+          const parsed = new URL(url)
+          return parsed.pathname.includes(`/${type}/${id}`)
+        },
+      ),
+      { numRuns: 100 },
+    )
   })
 })
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { stellarService } from '../services/stellar'
 import { Spinner } from './UI/Spinner'
+import { CopyButton } from './CopyButton'
 
 export interface TransactionStatusProps {
   txHash: string
@@ -96,15 +97,18 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
             </svg>
           </div>
           <span className="font-bold text-lg text-gray-800">Transaction Successful</span>
-          <a
-            href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-mono text-blue-500 hover:text-blue-700 underline truncate max-w-full px-4"
-            title={txHash}
-          >
-            {txHash.slice(0, 8)}...{txHash.slice(-8)}
-          </a>
+          <div className="inline-flex items-center gap-2">
+            <a
+              href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-mono text-blue-500 hover:text-blue-700 underline truncate max-w-xs"
+              title={txHash}
+            >
+              {txHash.slice(0, 8)}...{txHash.slice(-8)}
+            </a>
+            <CopyButton value={txHash} ariaLabel="Copy transaction hash" />
+          </div>
         </div>
       )}
 
