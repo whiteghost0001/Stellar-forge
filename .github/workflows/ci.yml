@@ -41,6 +41,20 @@ jobs:
         run: cargo test
         working-directory: contracts/token-factory
 
+  contract-fmt:
+    name: Rust Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check Rust formatting
+        run: cargo fmt -- --check
+        working-directory: contracts
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest

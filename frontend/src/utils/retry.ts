@@ -132,20 +132,9 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
         break
       }
 
-      // Calculate delay: use Retry-After if available, otherwise exponential backoff
-      let delayMs = baseDelayMs * Math.pow(2, attempt - 1)
-      
-      if (error instanceof HttpError && error.retryAfter) {
-        delayMs = Math.max(delayMs, error.retryAfter * 1000)
-      }
-
-      // Log only in development
-      if ((import.meta as any).env.DEV) {
-        console.warn(
-          `[Retry] Attempt ${attempt}/${maxAttempts} failed. Retrying in ${delayMs}ms...`,
-          error
-        )
-      }
+      // Exponential backoff before next attempt
+      const delayMs = baseDelayMs * Math.pow(2, attempt - 1)
+      void error // consumed by caller on final throw
 
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }

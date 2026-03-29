@@ -17,8 +17,7 @@ export function useLocalStorage<T>(
       // Parse stored json or if none return initialValue
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      // If error also return initialValue
-      console.warn(`Error reading localStorage key "${key}":`, error)
+      // localStorage read failure — fall back to initialValue silently
       return initialValue
     }
   })
@@ -38,8 +37,7 @@ export function useLocalStorage<T>(
         window.localStorage.setItem(key, JSON.stringify(valueToStore))
       }
     } catch (error) {
-      // A more advanced implementation would handle the error case
-      console.warn(`Error setting localStorage key "${key}":`, error)
+      // localStorage write failure — state is still updated in memory
     }
   }
 

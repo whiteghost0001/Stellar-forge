@@ -52,7 +52,11 @@ export const TransactionStatus: React.FC<TransactionStatusProps> = ({
           if (onError) onError(errorMsg)
         }
       } catch (err) {
-        console.error('Error polling transaction status:', err)
+        const msg = err instanceof Error ? err.message : 'Transaction polling failed'
+        setStatus('error')
+        setErrorMessage(msg)
+        clearInterval(intervalId)
+        if (onError) onError(msg)
       }
     }
 
